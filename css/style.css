@@ -1,0 +1,1513 @@
+:root{
+  --bg:#0b0708;
+  --bg-alt:#170a0d;
+  --card:rgba(255,45,70,0.07);
+  --card-border:rgba(255,70,95,0.18);
+  --accent:#e11d3c;
+  --accent-2:#ff4d6d;
+  --accent-soft:rgba(225,29,60,0.18);
+  --text:#f5e8ea;
+  --text-dim:#b3888e;
+  --radius:20px;
+  --radius-sm:12px;
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box;}
+
+html,body{
+  height:100%;
+  margin:0;
+  padding:0;
+  background:var(--bg);
+}
+
+/* ---- emotional black x red ambience ---- */
+body:not(.home):not(.ios-memo):not(.photo-empty)::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(60% 40% at 18% 0%, rgba(225,29,60,0.16) 0%, rgba(11,7,8,0) 60%),
+    radial-gradient(55% 35% at 100% 100%, rgba(225,29,60,0.10) 0%, rgba(11,7,8,0) 65%);
+  pointer-events:none;
+  z-index:0;
+}
+.wrap{ z-index:1; }
+
+/* 음악 페이지 하단 고정 재생바: 기본적으로 숨김(모바일),
+   PC 화면(.pc-glass)에서만 표시됩니다 */
+.player-bar{ display:none; }
+
+/* ---- home page: simple flat background ---- */
+body.home{
+  min-height:100vh;
+  background:radial-gradient(120% 60% at 50% -10%, rgba(225,29,60,0.22) 0%, rgba(11,7,8,0) 55%), #0b0708;
+  color-scheme:dark;
+}
+body.home .sky-layer{display:none;}
+body.home .wrap{position:relative;z-index:1;}
+body.home .hero .kicker{color:var(--accent);}
+body.home .hero h1{color:var(--text);}
+body.home .hero p{color:var(--text-dim);}
+
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Pretendard",sans-serif;
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+
+.wrap{
+  max-width:480px;
+  margin:0 auto;
+  min-height:100%;
+  padding:0 20px 40px;
+  position:relative;
+}
+
+/* ---- top bar ---- */
+.topbar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:22px 0 18px;
+  position:sticky;
+  top:env(safe-area-inset-top,0px);
+  background:linear-gradient(var(--bg) 70%, transparent);
+  z-index:5;
+}
+
+.back{
+  width:40px;height:40px;
+  border-radius:50%;
+  border:1px solid var(--card-border);
+  background:var(--card);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text);
+  text-decoration:none;
+  flex:none;
+  font-size:26px;
+  line-height:1;
+  font-weight:600;
+}
+
+.topbar h1{
+  font-size:19px;
+  font-weight:600;
+  margin:0;
+  letter-spacing:-0.01em;
+  flex:1;
+}
+.camera-btn{
+  width:40px;height:40px;
+  border-radius:50%;
+  border:1px solid var(--card-border);
+  background:var(--card);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text);
+  flex:none;
+  padding:0;
+  cursor:pointer;
+}
+.camera-btn svg{width:19px;height:19px;}
+
+/* ---- home hero ---- */
+.hero{
+  padding:38px 0 10px;
+}
+.hero .kicker{
+  color:var(--accent);
+  font-size:13px;
+  margin:0 0 6px;
+  letter-spacing:0.02em;
+}
+.hero h1{
+  font-size:30px;
+  line-height:1.25;
+  margin:0;
+  font-weight:700;
+  letter-spacing:-0.02em;
+}
+.hero p{
+  color:var(--text-dim);
+  font-size:14px;
+  margin:10px 0 0;
+  line-height:1.5;
+}
+
+/* ---- icon grid (home) ---- */
+.menu{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:28px;
+}
+.menu a{
+  text-decoration:none;
+  color:var(--text);
+}
+.tile{
+  position:relative;
+  aspect-ratio:1/1.02;
+  border-radius:var(--radius);
+  background:var(--card);
+  border:1px solid var(--card-border);
+  overflow:hidden;
+  transition:transform .15s ease;
+}
+.tile:active{
+  transform:scale(0.96);
+}
+.tile-img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.tile-label{
+  position:absolute;
+  left:8px;right:8px;bottom:8px;
+  background:rgba(15,4,7,0.55);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(225,29,60,0.4);
+  border-radius:13px;
+  padding:9px 12px;
+  text-align:center;
+}
+.tile-label span{
+  font-size:15px;
+  font-weight:700;
+  color:#f5e8ea;
+  text-shadow:0 1px 4px rgba(0,0,0,0.6);
+}
+.tile.wide{
+  grid-column:1 / -1;
+  aspect-ratio:auto;
+  min-height:150px;
+}
+.tile.wide .tile-label{
+  text-align:left;
+}
+.tile.wide .sub{
+  font-size:12px;
+  color:var(--text-dim);
+  margin-top:2px;
+  font-weight:500;
+}
+
+/* ---- generic grids ---- */
+.pgrid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+  margin-top:6px;
+}
+.pgrid .ph{
+  aspect-ratio:1/1;
+  border-radius:10px;
+  overflow:hidden;
+  background:var(--card);
+  border:1px solid var(--card-border);
+}
+.pgrid .ph img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+
+.list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-top:10px;
+}
+.row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius-sm);
+  padding:14px;
+}
+.row .ricon{
+  width:38px;height:38px;
+  border-radius:10px;
+  background:var(--accent-soft);
+  color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  flex:none;
+}
+.row .rtxt{flex:1;min-width:0;}
+.row .rtxt .t{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.row .rtxt .s{font-size:12px;color:var(--text-dim);margin-top:2px;}
+.row audio{width:100%;height:34px;margin-top:8px;}
+.row.stack{align-items:stretch;flex-direction:column;}
+.row.stack .top{display:flex;align-items:center;gap:12px;}
+
+/* ---- empty state ---- */
+.empty{
+  margin-top:40px;
+  text-align:center;
+  color:var(--text-dim);
+  font-size:14px;
+  line-height:1.6;
+}
+.empty .big{
+  font-size:34px;
+  margin-bottom:10px;
+}
+
+/* ---- fab ---- */
+.fab{
+  position:fixed;
+  right:calc(50% - 240px + 20px);
+  bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  width:56px;height:56px;
+  border-radius:50%;
+  background:linear-gradient(135deg, var(--accent-2), var(--accent));
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;
+  box-shadow:0 8px 24px rgba(225,29,60,0.45);
+  font-size:26px;
+  z-index:20;
+  animation:fabGlow 2.6s ease-in-out infinite;
+}
+@keyframes fabGlow{
+  0%,100%{ box-shadow:0 8px 24px rgba(225,29,60,0.45); }
+  50%{ box-shadow:0 8px 30px rgba(225,29,60,0.75); }
+}
+@media (max-width:520px){
+  .fab{ right:20px; }
+}
+
+/* ---- memo reader ---- */
+.reader{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius);
+  padding:18px;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-size:14.5px;
+  line-height:1.7;
+  color:var(--text);
+  margin-top:14px;
+}
+
+/* ---- lightbox ---- */
+.lightbox{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.92);
+  display:none;
+  align-items:center;justify-content:center;
+  z-index:100;
+  padding:20px;
+}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:100%;max-height:100%;border-radius:10px;}
+.lightbox .close{
+  position:absolute;top:calc(20px + env(safe-area-inset-top,0px));right:20px;
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(255,255,255,0.12);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+}
+
+/* ---- form ---- */
+.field{margin-top:16px;}
+.field label{display:block;font-size:13px;color:var(--text-dim);margin-bottom:6px;}
+.field input[type=text],
+.field input[type=url],
+.field textarea{
+  width:100%;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius-sm);
+  color:var(--text);
+  padding:12px 14px;
+  font-size:15px;
+  font-family:inherit;
+  resize:vertical;
+}
+.field textarea{min-height:120px;}
+.filepick{
+  display:flex;align-items:center;gap:10px;
+  background:var(--card);
+  border:1px dashed var(--card-border);
+  border-radius:var(--radius-sm);
+  padding:14px;
+  color:var(--text-dim);
+  font-size:14px;
+}
+.filepick input{flex:1;color:var(--text-dim);}
+.btn{
+  display:block;
+  width:100%;
+  text-align:center;
+  background:linear-gradient(135deg, var(--accent-2), var(--accent));
+  color:#fff;
+  border:none;
+  border-radius:var(--radius-sm);
+  padding:15px;
+  font-size:15px;
+  font-weight:700;
+  margin-top:22px;
+}
+.btn:disabled{opacity:0.5;}
+.hint{
+  font-size:12px;
+  color:var(--text-dim);
+  margin-top:8px;
+  line-height:1.5;
+}
+
+a{color:var(--accent);}
+
+/* ---- rich text editor (Naver 스마트에디터 스타일) ---- */
+.editor-wrap{
+  background:#fff;
+  border-radius:var(--radius-sm);
+  overflow:hidden;
+  border:1px solid var(--card-border);
+}
+.editor-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:2px;
+  background:#f3f4f6;
+  border-bottom:1px solid #e2e4e8;
+  padding:6px;
+}
+.editor-toolbar button{
+  min-width:32px;
+  height:32px;
+  border:none;
+  background:transparent;
+  border-radius:6px;
+  color:#333;
+  font-size:14px;
+  cursor:pointer;
+}
+.editor-toolbar button:active,
+.editor-toolbar button:hover{
+  background:rgba(225,29,60,0.12);
+  color:#c81733;
+}
+.editor-toolbar select{
+  height:32px;
+  border:1px solid #dcdfe4;
+  border-radius:6px;
+  background:#fff;
+  color:#333;
+  font-size:12.5px;
+  padding:0 6px;
+}
+.editor-toolbar .tsep{
+  width:1px;height:20px;background:#dcdfe4;margin:0 4px;
+}
+.editor-area{
+  min-height:260px;
+  background:#fff;
+  color:#181818;
+  padding:16px;
+  font-size:15px;
+  line-height:1.75;
+  outline:none;
+}
+.editor-area:empty:before{
+  content:attr(data-placeholder);
+  color:#aeb2ba;
+}
+.editor-area img{max-width:100%;border-radius:6px;margin:6px 0;display:block;}
+.editor-area a{color:#c81733;}
+.editor-area blockquote{
+  margin:10px 0;
+  padding:8px 14px;
+  border-left:3px solid #c81733;
+  color:#555;
+  background:#f7f8f9;
+}
+
+/* ---- photo: native-style empty state ---- */
+body.photo-empty{
+  background:#0b0708;
+}
+.native-back{
+  position:fixed;
+  top:calc(18px + env(safe-area-inset-top,0px));
+  left:18px;
+  width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  color:#f5e8ea;
+  text-decoration:none;
+  font-size:24px;
+  z-index:5;
+}
+.native-camera{
+  position:fixed;
+  top:calc(18px + env(safe-area-inset-top,0px));
+  right:18px;
+  width:36px;height:36px;
+  border-radius:50%;
+  border:1px solid rgba(225,29,60,0.25);
+  background:#170a0d;
+  box-shadow:0 1px 6px rgba(225,29,60,0.25);
+  display:flex;align-items:center;justify-content:center;
+  color:#f5e8ea;
+  padding:0;
+  cursor:pointer;
+  z-index:5;
+}
+.native-camera svg{width:17px;height:17px;}
+.native-empty{
+  position:fixed;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:0 40px;
+  gap:10px;
+}
+.native-empty .t1{
+  font-size:18px;
+  font-weight:700;
+  color:#f5e8ea;
+}
+.native-empty .t2{
+  font-size:14px;
+  color:#b3888e;
+  line-height:1.5;
+}
+
+/* ---- photo grid (3 columns, tap to view) ---- */
+.pgrid .ph{position:relative;cursor:pointer;}
+.pgrid .ph .check{
+  position:absolute;
+  top:6px;right:6px;
+  width:22px;height:22px;
+  border-radius:50%;
+  background:rgba(0,0,0,0.35);
+  border:1.5px solid rgba(255,255,255,0.85);
+  display:none;
+  align-items:center;justify-content:center;
+  color:#fff;
+  font-size:13px;
+  z-index:2;
+}
+.pgrid.selecting .ph .check{display:flex;}
+.pgrid .ph.picked .check{background:var(--accent);border-color:var(--accent);color:#fff;}
+.pgrid .ph.picked{outline:2px solid var(--accent);outline-offset:-2px;}
+.pgrid .ph .dim{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,0);
+  transition:background .12s ease;
+}
+.pgrid .ph.picked .dim{background:rgba(0,0,0,0.18);}
+
+/* ---- transparent bottom action bar ---- */
+.bottombar{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  padding:14px 20px calc(16px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(180deg, rgba(18,20,26,0) 0%, rgba(18,20,26,0.55) 40%, rgba(18,20,26,0.78) 100%);
+  z-index:55;
+}
+.bottombar button{
+  flex:1;
+  max-width:220px;
+  background:rgba(255,255,255,0.14);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,0.28);
+  color:#fff;
+  font-size:14.5px;
+  font-weight:600;
+  padding:13px 10px;
+  border-radius:14px;
+}
+.bottombar button:active{background:rgba(255,255,255,0.26);}
+.bottombar button.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.bottombar button.danger{color:#ff8a80;border-color:rgba(255,138,128,0.45);}
+
+/* ---- photo viewer (centered, padded) ---- */
+.viewer{
+  position:fixed;inset:0;
+  background:rgba(9,3,4,0.96);
+  display:none;
+  align-items:center;justify-content:center;
+  padding:48px 28px;
+  z-index:50;
+  overflow:hidden;
+  touch-action:none;
+}
+.viewer.open{display:flex;}
+.viewer img{
+  max-width:100%;
+  max-height:100%;
+  border-radius:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  touch-action:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  will-change:transform;
+}
+.viewer img.snapping{
+  transition:transform .18s ease;
+}
+.viewer .vclose{
+  position:fixed;
+  top:calc(18px + env(safe-area-inset-top,0px));
+  right:20px;
+  width:38px;height:38px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.14);
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;
+  z-index:51;
+}
+
+/* ---- info modal ---- */
+.modal-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.55);
+  display:none;
+  align-items:flex-end;
+  z-index:80;
+}
+.modal-overlay.open{display:flex;}
+.modal-sheet{
+  width:100%;
+  background:var(--bg-alt);
+  border-radius:20px 20px 0 0;
+  padding:22px 20px calc(24px + env(safe-area-inset-bottom,0px));
+  border-top:1px solid var(--card-border);
+}
+.modal-sheet h2{
+  font-size:16px;
+  margin:0 0 14px;
+  color:var(--text);
+}
+.modal-sheet input[type=password],
+.modal-sheet textarea{
+  width:100%;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius-sm);
+  color:var(--text);
+  padding:12px 14px;
+  font-size:15px;
+  font-family:inherit;
+}
+.modal-sheet textarea{min-height:120px;resize:vertical;margin-top:4px;}
+.info-view{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius-sm);
+  color:var(--text);
+  padding:14px;
+  font-size:14.5px;
+  line-height:1.6;
+  white-space:pre-wrap;
+  word-break:break-word;
+  min-height:60px;
+  max-height:40vh;
+  overflow-y:auto;
+}
+.modal-actions{display:flex;gap:10px;margin-top:16px;}
+.modal-actions button{
+  flex:1;
+  padding:13px;
+  border-radius:var(--radius-sm);
+  border:none;
+  font-size:14.5px;
+  font-weight:700;
+}
+.modal-actions .cancel{background:var(--card);color:var(--text-dim);border:1px solid var(--card-border);}
+.modal-actions .ok{background:var(--accent);color:#fff;}
+.modal-msg{font-size:12.5px;color:var(--text-dim);margin-top:8px;min-height:16px;}
+
+/* ---- video: youtube link thumbnails (photo-style 3x3) + web player ---- */
+.vgrid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+  margin-top:6px;
+}
+.vgrid .vcard{
+  position:relative;
+  aspect-ratio:1/1;
+  border-radius:10px;
+  overflow:hidden;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  cursor:pointer;
+}
+.vcard img{
+  width:100%;height:100%;object-fit:cover;display:block;
+  background:#000;
+}
+.vcard .playmark{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.18);
+}
+.vcard .playmark span{
+  width:34px;height:34px;
+  border-radius:50%;
+  background:rgba(0,0,0,0.55);
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;
+  padding-left:2px;
+}
+
+/* video select/delete mode */
+.text-btn{
+  height:40px;
+  padding:0 14px;
+  border-radius:20px;
+  border:1px solid var(--card-border);
+  background:var(--card);
+  color:var(--text);
+  font-size:14px;
+  flex:none;
+  cursor:pointer;
+}
+.text-btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.vgrid.selecting .vcard{cursor:pointer;}
+.vgrid.selecting .vcard .playmark{display:none;}
+.vgrid .vcard .check{
+  position:absolute;
+  top:6px;right:6px;
+  width:22px;height:22px;
+  border-radius:50%;
+  background:rgba(0,0,0,0.35);
+  border:1.5px solid rgba(255,255,255,0.85);
+  display:none;
+  align-items:center;justify-content:center;
+  color:#fff;
+  font-size:13px;
+  z-index:2;
+}
+.vgrid.selecting .vcard .check{display:flex;}
+.vgrid .vcard.picked .check{background:var(--accent);border-color:var(--accent);color:#fff;}
+.vgrid .vcard.picked{outline:2px solid var(--accent);outline-offset:-2px;}
+.vgrid .vcard .dim{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,0);
+  transition:background .12s ease;
+}
+.vgrid .vcard.picked .dim{background:rgba(0,0,0,0.18);}
+
+/* touch keypad (no device keyboard) for password entry */
+.pw-desc{font-size:13px;color:var(--text-dim);margin:0 0 16px;}
+.pw-dots{
+  display:flex;
+  justify-content:center;
+  gap:16px;
+  margin:0 0 8px;
+}
+.pw-dots .dot{
+  width:16px;height:16px;
+  border-radius:50%;
+  border:1.5px solid var(--card-border);
+  background:transparent;
+  transition:background .12s ease, border-color .12s ease, transform .12s ease;
+}
+.pw-dots .dot.filled{background:var(--accent);border-color:var(--accent);}
+.pw-dots.shake{animation:pwShake .35s ease;}
+@keyframes pwShake{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-8px);}
+  40%{transform:translateX(8px);}
+  60%{transform:translateX(-6px);}
+  80%{transform:translateX(6px);}
+}
+.keypad{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin:18px 0 4px;
+}
+.keypad button{
+  height:56px;
+  border-radius:14px;
+  border:1px solid var(--card-border);
+  background:var(--card);
+  color:var(--text);
+  font-size:19px;
+  cursor:pointer;
+}
+.keypad button:active{background:rgba(255,255,255,0.12);}
+.keypad button.keypad-empty{background:transparent;border-color:transparent;cursor:default;}
+.keypad button.keypad-del{font-size:16px;color:var(--text-dim);}
+
+.player-wrap{
+  position:relative;
+  width:100%;
+  max-width:720px;
+  aspect-ratio:16/9;
+}
+.player-wrap iframe{
+  width:100%;height:100%;
+  border:0;
+  border-radius:14px;
+}
+#playerFrame{width:100%;height:100%;}
+.player-wrap:fullscreen{
+  max-width:none;
+  aspect-ratio:auto;
+  width:100vw;height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  background:#000;
+}
+.player-wrap:fullscreen iframe{
+  border-radius:0;
+}
+/* 화면 방향 잠금 API가 지원되지 않을 때: 세로 화면에서도
+   영상 영역을 90도 회전시켜 가로처럼 보이도록 하는 대체 수단 */
+@media (orientation:portrait){
+  .player-wrap.force-landscape:fullscreen{
+    position:fixed;
+    top:50%;left:50%;
+    width:100vh;height:100vw;
+    transform:translate(-50%,-50%) rotate(90deg);
+  }
+}
+.fs-exit{
+  position:absolute;
+  top:14px;right:14px;
+  padding:10px 16px;
+  border-radius:20px;
+  background:rgba(0,0,0,0.7);
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  border:1px solid rgba(255,255,255,0.35);
+  display:none;
+  z-index:1000;
+}
+.fs-exit.show{display:block;}
+
+.modal-sheet input[type=url]{
+  width:100%;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius-sm);
+  color:var(--text);
+  padding:12px 14px;
+  font-size:15px;
+  font-family:inherit;
+}
+
+/* ==========================================================
+   메모 화면: iOS 메모 앱 느낌의 브러시드 메탈 스타일
+   ========================================================== */
+body.ios-memo{
+  background:#0b0708;
+  min-height:100vh;
+  color-scheme:dark;
+}
+.ios-wrap{
+  max-width:480px;
+  margin:0 auto;
+  min-height:100vh;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+}
+
+.ios-topbar{
+  position:sticky;
+  top:0;
+  padding-top:env(safe-area-inset-top,0px);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  background:#150a0c;
+  border-bottom:1px solid rgba(225,29,60,0.2);
+  z-index:10;
+}
+.ios-topbar .ios-back{
+  width:40px;height:44px;
+  display:flex;align-items:center;justify-content:center;
+  color:#f5e8ea;
+  font-size:24px;font-weight:600;
+  text-decoration:none;
+  flex:none;
+}
+.ios-topbar .ios-title{
+  flex:1;min-width:0;
+  display:flex;align-items:center;gap:6px;
+  padding:12px 4px 12px 0;
+  font-size:16.5px;font-weight:700;color:#f5e8ea;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ios-topbar .ios-title .pencil{font-size:15px;flex:none;}
+.ios-topbar .ios-actions{
+  display:flex;
+  flex:none;
+  align-items:center;
+  gap:2px;
+  padding-right:6px;
+}
+.ios-topbar .ios-actbtn{
+  background:none;
+  border:none;
+  font-size:14.5px;
+  font-weight:600;
+  color:var(--accent-2);
+  padding:8px 8px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.ios-topbar .ios-actbtn:active{background:rgba(225,29,60,0.1);}
+.ios-topbar .ios-actbtn.danger{color:#ff5c72;}
+
+.ios-search{
+  display:none;
+  padding:8px 14px;
+  background:#0b0708;
+  border-bottom:1px solid rgba(225,29,60,0.2);
+}
+.ios-search.open{display:block;}
+.ios-search input{
+  width:100%;border:none;border-radius:10px;
+  background:#170a0d;padding:9px 12px;font-size:15px;
+  color:#f5e8ea;outline:none;
+  box-shadow:inset 0 0 0 1px rgba(225,29,60,0.25);
+}
+
+.ios-body{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding-bottom:96px;
+}
+
+/* 메모 목록 */
+.ios-list{
+  padding:4px 16px 0;
+}
+.ios-list .irow{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 2px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.ios-list .irow:active{background:rgba(225,29,60,0.07);}
+.ios-list .irow .iicon{
+  width:24px;height:24px;flex:none;color:#b3888e;
+}
+.ios-list .irow .iicon svg{width:100%;height:100%;}
+.ios-list .irow .itxt{flex:1;min-width:0;}
+.ios-list .irow .itxt .t{
+  font-size:15.5px;font-weight:600;color:#f5e8ea;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ios-list .irow .itxt .s{
+  font-size:12.5px;color:#b3888e;margin-top:2px;
+}
+.ios-list .irow .chev{color:#7a4a4f;font-size:15px;flex:none;}
+
+/* 빈 상태: 가운데 + 아이콘과 '비어있음' */
+.ios-empty{
+  flex:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:18px;padding:0 30px;text-align:center;
+}
+.ios-empty .plusbtn{
+  width:64px;height:64px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  color:#7a4a4f;background:none;border:none;
+}
+.ios-empty .plusbtn svg{width:52px;height:52px;}
+.ios-empty .label{font-size:15px;color:#b3888e;font-weight:600;}
+
+/* 하단 iOS 스타일 툴바: 불러오기 / 저장하기 / 글쓰기 / 검색 */
+.ios-toolbar{
+  position:fixed;left:0;right:0;bottom:0;
+  max-width:480px;margin:0 auto;
+  display:flex;justify-content:space-around;
+  padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));
+  background:#150a0c;
+  border-top:1px solid rgba(225,29,60,0.2);
+  z-index:30;
+}
+.ios-toolbar .ibtn{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  background:none;border:none;flex:1;
+  color:#e8d3d5;
+}
+.ios-toolbar .ibtn .isq{
+  width:42px;height:42px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  background:#1c0e10;
+  border:1px solid rgba(225,29,60,0.25);
+  color:#f5e8ea;
+  margin:0 auto;
+}
+.ios-toolbar .ibtn .isq svg{width:19px;height:19px;}
+.ios-toolbar .ibtn:active .isq{background:rgba(225,29,60,0.16);}
+.ios-toolbar .ibtn span.lbl{font-size:10.5px;color:#b3888e;font-weight:700;}
+
+/* 메모 읽기 화면 */
+.ios-reader{
+  display:none;
+  flex:1;
+  flex-direction:column;
+  background:#0e070a;
+  padding:18px 20px 40px;
+}
+.ios-reader.open{display:flex;}
+.ios-reader .rtext{
+  white-space:pre-wrap;word-break:break-word;
+  font-size:15.5px;line-height:1.75;color:#f0e2e4;
+}
+
+/* 새 메모 작성 화면 */
+.ios-write{
+  position:fixed;inset:0;z-index:60;
+  display:none;flex-direction:column;
+  background:#0b0708;
+}
+.ios-write.open{display:flex;}
+.ios-write .wtop{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(14px + env(safe-area-inset-top,0px)) 16px 12px;
+  border-bottom:1px solid rgba(225,29,60,0.18);
+}
+.ios-write .wtop button{
+  border:none;background:none;font-size:16px;font-weight:700;
+  color:var(--accent,#e11d3c);padding:6px 4px;
+}
+.ios-write .wtop button.wcancel{color:#b3888e;font-weight:600;}
+.ios-write input#memoTitle{
+  border:none;outline:none;padding:14px 16px 0;
+  font-size:19px;font-weight:700;color:#f5e8ea;font-family:inherit;
+  background:#0b0708;
+}
+.ios-write textarea#memoContent{
+  flex:1;border:none;outline:none;resize:none;
+  padding:8px 16px 16px;font-size:16px;line-height:1.7;
+  color:#f0e2e4;font-family:inherit;
+  background:#0b0708;
+}
+.ios-write .wmsg{padding:0 16px 10px;font-size:12.5px;color:#b3888e;min-height:16px;}
+
+/* 선택 모드 체크박스 */
+.ios-list .irow .ischeck{
+  display:none;
+  width:22px;height:22px;border-radius:50%;flex:none;
+  border:1.5px solid rgba(225,29,60,0.35);
+  align-items:center;justify-content:center;
+  font-size:12px;color:#fff;font-weight:700;
+}
+.ios-list.selecting .irow .ischeck{display:flex;}
+.ios-list.selecting .irow .chev{display:none;}
+.ios-list .irow.selected .ischeck{background:var(--accent,#e11d3c);border-color:var(--accent,#e11d3c);}
+
+/* 선택 저장 바 (검색바와 같은 자리, 상호 배타적으로 노출) */
+.ios-selectbar{
+  display:none;
+  align-items:center;gap:10px;
+  padding:10px 14px;
+  background:#0b0708;
+  border-bottom:1px solid rgba(225,29,60,0.18);
+}
+.ios-selectbar.open{display:flex;}
+.ios-selectbar button{border:none;background:none;font-size:13.5px;font-weight:700;padding:4px 2px;color:var(--accent,#e11d3c);}
+.ios-selectbar #selCancel{color:#b3888e;}
+.ios-selectbar #selCount{flex:1;text-align:center;font-size:12.5px;color:#d8bfc2;font-weight:600;}
+.ios-selectbar #selConfirm.danger{color:#ff5c72;}
+
+/* 하단 토스트 알림 */
+.ios-toast{
+  position:fixed;left:50%;bottom:112px;
+  transform:translateX(-50%) translateY(10px);
+  background:rgba(20,20,22,0.9);color:#fff;
+  font-size:13px;font-weight:600;
+  padding:10px 16px;border-radius:20px;
+  opacity:0;pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+  z-index:90;max-width:82%;text-align:center;
+}
+.ios-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* 새 메모 작성: 비밀번호 확인 단계 */
+.ios-write .pwbox{padding:26px 20px;background:#0b0708;}
+.ios-write .pwbox p{font-size:14px;color:#b3888e;margin:0 0 12px;}
+.ios-write .pwbox input{
+  width:100%;border:1px solid rgba(225,29,60,0.25);border-radius:10px;
+  padding:13px 14px;font-size:16px;color:#f5e8ea;outline:none;
+  font-family:inherit;
+  background:#170a0d;
+}
+.ios-write .pwbox .pwmsg{font-size:12.5px;color:#ff5c72;margin-top:8px;min-height:16px;}
+.ios-write .pwbox .pwok{
+  margin-top:14px;width:100%;background:linear-gradient(135deg, var(--accent-2), var(--accent));color:#fff;
+  border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;
+}
+.ios-write .wform{flex:1;display:none;flex-direction:column;background:#0b0708;}
+
+/* ---- rendered post content (list view) ---- */
+.post-html{
+  background:#150a0c;
+  color:#f0e2e4;
+  border-radius:14px;
+  padding:14px 16px;
+  margin-top:10px;
+  font-size:14.5px;
+  line-height:1.75;
+  word-break:break-word;
+}
+.post-html img{max-width:100%;border-radius:8px;margin:8px 0;display:block;}
+.post-html a{color:var(--accent-2);}
+.post-html blockquote{
+  margin:10px 0;
+  padding:8px 14px;
+  border-left:3px solid var(--accent);
+  color:#c9a4a8;
+  background:rgba(225,29,60,0.07);
+}
+
+/* ==========================================================
+   홈 화면: 게임 기종 검색
+   ========================================================== */
+.home-search{
+  margin-top:22px;
+}
+.home-search .search-box{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:999px;
+  padding:13px 18px;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.home-search .search-box:focus-within{
+  border-color:rgba(225,29,60,0.55);
+}
+.home-search .search-box svg{
+  width:18px;height:18px;flex:none;
+  color:var(--text-dim);
+}
+.home-search input{
+  flex:1;
+  min-width:0;
+  border:none;
+  outline:none;
+  background:none;
+  font-family:inherit;
+  font-size:15px;
+  color:var(--text);
+}
+.home-search input::placeholder{
+  color:var(--text-dim);
+}
+.search-results{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:10px;
+}
+.search-results:empty{
+  margin-top:0;
+}
+.sr-item{
+  display:block;
+  text-align:left;
+  text-decoration:none;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:14px;
+  padding:12px 14px;
+  color:var(--text);
+}
+.sr-name{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:14.5px;
+  font-weight:700;
+}
+.sr-badge{
+  font-size:11px;
+  font-weight:700;
+  color:#4ad07a;
+  background:rgba(74,208,122,0.15);
+  border:1px solid rgba(74,208,122,0.4);
+  border-radius:999px;
+  padding:2px 8px;
+  flex:none;
+}
+.sr-sub{
+  font-size:12.5px;
+  color:var(--text-dim);
+  margin-top:2px;
+}
+.sr-ext{
+  font-size:12.5px;
+  color:var(--text-dim);
+  margin-top:5px;
+}
+.sr-empty{
+  font-size:13px;
+  color:var(--text-dim);
+  text-align:center;
+  padding:12px 4px;
+}
+
+/* ==========================================================
+   홈 화면: PC / 태블릿 전용 레이아웃
+   (모바일 = 기존 그대로, 768px 이상 = 보라/파랑 글래스 배경 +
+   아이콘 영역을 화면 정중앙에 배치)
+   ========================================================== */
+@media (min-width:768px){
+  /* 보라/파랑 글래스 배경 - home 뿐 아니라 .pc-glass가 붙은
+     다른 페이지(사진/영상/메모/음악)에서도 공유해서 씁니다 */
+  body.home,
+  body.pc-glass{
+    background:#140c26;
+  }
+  body.home::before,
+  body.pc-glass::before{
+    content:"";
+    position:fixed;
+    inset:-15%;
+    background:
+      radial-gradient(30% 38% at 20% 24%, #a855f7 0%, rgba(168,85,247,0) 70%),
+      radial-gradient(34% 42% at 82% 18%, #3b82f6 0%, rgba(59,130,246,0) 70%),
+      radial-gradient(38% 46% at 26% 82%, #6366f1 0%, rgba(99,102,241,0) 70%),
+      radial-gradient(34% 42% at 84% 78%, #7c3aed 0%, rgba(124,58,237,0) 70%);
+    filter:blur(70px) saturate(130%);
+    opacity:0.9;
+    pointer-events:none;
+    z-index:0;
+  }
+  body.home .wrap{
+    max-width:none;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 24px;
+  }
+  body.home .home-center{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:640px;
+    text-align:center;
+  }
+  body.home .hero{
+    padding:0 0 4px;
+  }
+  body.home .hero .kicker,
+  body.home .hero h1,
+  body.home .hero p{
+    text-align:center;
+  }
+  body.home .hero h1{
+    font-size:27px;
+  }
+  body.home .home-search{
+    max-width:520px;
+    margin:24px auto 0;
+  }
+  body.home .search-results{
+    text-align:left;
+  }
+  body.home .menu{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:22px;
+    margin-top:30px;
+  }
+  body.home .menu a{
+    flex:0 0 108px;
+  }
+  body.home .tile{
+    aspect-ratio:1/1;
+  }
+  body.home .tile.wide{
+    grid-column:auto;
+    aspect-ratio:1/1;
+    min-height:0;
+  }
+  body.home .tile.wide .tile-label{
+    text-align:center;
+  }
+}
+
+/* ==========================================================
+   사진 / 영상 / 음악: PC·태블릿 전용 레이아웃
+   (768px 이상 = 홈 화면과 같은 보라/파랑 글래스 배경 위에
+   내용 전체가 떠 있는 유리 패널(카드) 형태로 표시)
+   ========================================================== */
+@media (min-width:768px){
+  body.pc-glass .wrap{
+    position:relative;
+    z-index:1;
+    max-width:1040px;
+    min-height:0;
+    margin:44px auto;
+    padding:30px 36px 40px;
+    background:rgba(24,14,30,0.55);
+    border:1px solid rgba(255,255,255,0.09);
+    border-radius:26px;
+    backdrop-filter:blur(26px) saturate(140%);
+    -webkit-backdrop-filter:blur(26px) saturate(140%);
+    box-shadow:0 30px 90px rgba(0,0,0,0.45);
+  }
+  body.pc-glass .wrap .topbar{
+    position:static;
+    background:none;
+    padding:0 0 22px;
+  }
+  body.pc-glass .wrap .hero{
+    padding-top:0;
+  }
+
+  /* 사진 그리드: 화면 폭에 맞춰 더 많은 열로 표시 */
+  body.pc-glass .pgrid{
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:12px;
+  }
+  /* 영상 썸네일 그리드도 동일하게 */
+  body.pc-glass .vgrid{
+    grid-template-columns:repeat(auto-fill,minmax(210px,1fr));
+    gap:14px;
+  }
+  body.pc-glass .player-wrap{
+    max-width:900px;
+    margin:0 auto;
+  }
+  body.pc-glass .list .row{
+    padding:16px 18px;
+  }
+  body.pc-glass .bottombar{
+    padding-bottom:24px;
+  }
+}
+
+/* ==========================================================
+   메모: PC·태블릿에서 데스크탑 메모 앱과 비슷한
+   사이드바(목록) + 본문(읽기/쓰기) 2단 레이아웃
+   ========================================================== */
+@media (min-width:768px){
+  body.ios-memo.pc-glass{
+    background:#140c26;
+  }
+  .ios-wrap{
+    position:relative;
+    z-index:1;
+    max-width:1120px;
+    height:82vh;
+    min-height:560px;
+    margin:36px auto;
+    display:grid;
+    grid-template-columns:300px 1fr;
+    grid-template-rows:auto auto auto 1fr auto;
+    grid-template-areas:
+      "topbar    topbar"
+      "search    search"
+      "selectbar selectbar"
+      "list      reader"
+      "toolbar   toolbar";
+    background:rgba(20,10,26,0.55);
+    border:1px solid rgba(255,255,255,0.09);
+    border-radius:26px;
+    overflow:hidden;
+    backdrop-filter:blur(26px) saturate(140%);
+    -webkit-backdrop-filter:blur(26px) saturate(140%);
+    box-shadow:0 30px 90px rgba(0,0,0,0.45);
+  }
+
+  .ios-topbar{
+    grid-area:topbar;
+    position:static;
+    background:rgba(255,255,255,0.03);
+    padding:16px 20px;
+  }
+
+  .ios-search{
+    grid-area:search;
+    display:block !important;
+    background:none;
+    border-bottom:1px solid rgba(225,29,60,0.16);
+    padding:10px 16px;
+  }
+
+  .ios-selectbar{
+    grid-area:selectbar;
+  }
+  .ios-selectbar.open{
+    display:flex;
+  }
+
+  /* ios-body는 grid 배치에서 빠지고, 안의 리스트/빈상태/리더가
+     각각 직접 grid item으로 배치됩니다 */
+  .ios-body{
+    display:contents;
+    padding-bottom:0;
+  }
+  .ios-list{
+    grid-area:list;
+    align-self:stretch;
+    overflow-y:auto;
+    padding:6px 10px 14px;
+    border-right:1px solid rgba(255,255,255,0.07);
+  }
+  .ios-empty{
+    grid-area:list;
+    align-self:stretch;
+    border-right:1px solid rgba(255,255,255,0.07);
+  }
+  .ios-empty .plusbtn svg{width:38px;height:38px;}
+
+  .ios-list .irow:hover{
+    background:rgba(255,255,255,0.045);
+    cursor:pointer;
+  }
+
+  .ios-reader{
+    grid-area:reader;
+    display:flex !important;
+    overflow-y:auto;
+    padding:30px 40px;
+  }
+  .ios-reader .rtext{
+    max-width:680px;
+    margin:0 auto;
+    font-size:15.5px;
+  }
+  .ios-reader .rtext:empty::before{
+    content:"왼쪽 목록에서 메모를 선택하면 여기에 표시됩니다.";
+    color:#b3888e;
+  }
+
+  .ios-toolbar{
+    grid-area:toolbar;
+    position:static;
+    max-width:none;
+    margin:0;
+    background:rgba(255,255,255,0.03);
+    border-top:1px solid rgba(225,29,60,0.16);
+  }
+
+  /* 글쓰기 화면: 전체 화면 대신 메모 앱 창 크기에 맞춰 중앙에 표시 */
+  .ios-write{
+    top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    inset:auto;
+    width:100%;
+    max-width:1120px;
+    height:82vh;
+    min-height:560px;
+    border-radius:26px;
+    overflow:hidden;
+    box-shadow:0 30px 90px rgba(0,0,0,0.5);
+  }
+}
+
+/* ==========================================================
+   음악: PC·태블릿에서 데스크탑 음악 플레이어와 비슷하게
+   목록 + 하단 고정 재생바(Now Playing) 형태로 표시
+   ========================================================== */
+@media (min-width:768px){
+  body.pc-glass .list{
+    gap:6px;
+  }
+  body.pc-glass .list .row.stack{
+    flex-direction:row;
+    align-items:center;
+    padding:12px 16px;
+    cursor:pointer;
+    transition:background .12s ease;
+  }
+  body.pc-glass .list .row.stack:hover{
+    background:rgba(255,255,255,0.05);
+  }
+  body.pc-glass .list .row.stack .top{
+    flex:1;
+    min-width:0;
+  }
+  /* 데스크탑에서는 곡을 누르면 하단 재생바에서 재생하므로
+     행 안의 기본 오디오 컨트롤은 숨깁니다 */
+  body.pc-glass .list .row.stack audio{
+    display:none;
+  }
+  body.pc-glass .list .row.stack.active{
+    background:rgba(225,29,60,0.12);
+    outline:1px solid rgba(225,29,60,0.35);
+  }
+  body.pc-glass .list .row.stack.active .ricon{
+    background:var(--accent);
+    color:#fff;
+  }
+
+  body.pc-glass .wrap{
+    padding-bottom:100px; /* 하단 재생바에 가려지지 않도록 여백 확보 */
+  }
+
+  body.pc-glass .player-bar{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    position:fixed;
+    left:50%;
+    bottom:26px;
+    transform:translateX(-50%);
+    width:calc(1040px - 72px);
+    max-width:calc(100vw - 72px);
+    padding:12px 18px;
+    background:rgba(24,14,30,0.75);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:18px;
+    backdrop-filter:blur(20px) saturate(140%);
+    -webkit-backdrop-filter:blur(20px) saturate(140%);
+    box-shadow:0 20px 50px rgba(0,0,0,0.45);
+    z-index:20;
+  }
+  .player-bar .pb-icon{
+    width:40px;height:40px;flex:none;
+    border-radius:10px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;
+  }
+  .player-bar .pb-info{
+    flex:0 0 auto;
+    width:200px;
+    min-width:0;
+  }
+  .player-bar .pb-title{
+    font-size:13.5px;font-weight:700;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .player-bar .pb-sub{
+    font-size:11.5px;color:var(--text-dim);margin-top:2px;
+  }
+  .player-bar audio{
+    flex:1;
+    height:34px;
+    min-width:0;
+  }
+}

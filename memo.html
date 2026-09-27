@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>메모 | 나의 기록보관소</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="ios-memo pc-glass">
+<div class="ios-wrap">
+
+  <div class="ios-topbar">
+    <a class="ios-back" href="#" id="backBtn">‹</a>
+    <div class="ios-title"><span class="pencil">📝</span><span id="pageTitle">새로운 메모</span></div>
+    <div class="ios-actions" id="topActions">
+      <button type="button" class="ios-actbtn" id="btnInfo">정보</button>
+      <button type="button" class="ios-actbtn danger" id="btnDelete">삭제</button>
+    </div>
+  </div>
+
+  <div class="ios-search" id="searchBar">
+    <input type="text" id="searchInput" placeholder="메모 검색" autocomplete="off">
+  </div>
+
+  <div class="ios-selectbar" id="selectBar">
+    <button type="button" id="selAll">전체선택</button>
+    <span id="selCount">0개 선택됨</span>
+    <button type="button" id="selCancel">취소</button>
+    <button type="button" id="selConfirm">저장</button>
+  </div>
+
+  <div class="ios-body">
+
+    <div id="list" class="ios-list" style="display:none"></div>
+
+    <div id="empty" class="ios-empty" style="display:none">
+      <button type="button" class="plusbtn" id="emptyPlus" aria-label="새로운 메모">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <div class="label" id="emptyLabel">비어있음</div>
+    </div>
+
+    <div id="reader" class="ios-reader">
+      <div class="rtext" id="readerText"></div>
+    </div>
+
+  </div>
+
+  <!-- 하단 iOS 스타일 툴바 -->
+  <div class="ios-toolbar">
+    <button type="button" class="ibtn" id="btnReload">
+      <span class="isq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></span>
+      <span class="lbl">불러오기</span>
+    </button>
+    <button type="button" class="ibtn" id="btnSave">
+      <span class="isq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M5 19h14"/></svg></span>
+      <span class="lbl">저장하기</span>
+    </button>
+    <button type="button" class="ibtn" id="btnWrite">
+      <span class="isq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-6"/><path d="M18.4 3.6a1.7 1.7 0 0 1 2.4 2.4L12 15l-3.5.9L9.4 12z"/></svg></span>
+      <span class="lbl">글쓰기</span>
+    </button>
+    <button type="button" class="ibtn" id="btnSearch">
+      <span class="isq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.8-3.8"/></svg></span>
+      <span class="lbl">검색</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- 기기에서 메모 파일(txt/doc/docx/hwp) 불러오기 -->
+<input type="file" id="importInput" multiple accept=".txt,.text,.doc,.docx,.hwp" style="display:none">
+
+<!-- 새 메모 작성: 비밀번호 확인 → 작성 -->
+<div class="ios-write" id="writeScreen">
+  <div class="wtop">
+    <button type="button" class="wcancel" id="writeCancel">취소</button>
+    <span id="writeHeader" style="font-size:15px;font-weight:700;color:#1c1d1f;">비밀번호 확인</span>
+    <button type="button" id="writeSave" style="visibility:hidden">완료</button>
+  </div>
+
+  <div class="pwbox" id="writePwStep">
+    <p>메모를 작성하려면 비밀번호를 입력하세요.</p>
+    <input type="password" id="writePwInput" inputmode="numeric" placeholder="비밀번호" autocomplete="off">
+    <div class="pwmsg" id="writePwMsg"></div>
+    <button type="button" class="pwok" id="writePwOk">확인</button>
+  </div>
+
+  <div class="wform" id="writeFormStep">
+    <input type="text" id="memoTitle" placeholder="제목">
+    <textarea id="memoContent" placeholder="메모를 입력하세요"></textarea>
+    <div class="wmsg" id="writeMsg"></div>
+  </div>
+</div>
+
+<div class="ios-toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="js/app.js"></script>
+<script>
+const PREVIEWABLE = ["txt","md","log","csv"];
+const IMPORT_ALLOWED = ["txt","text","doc","docx","hwp"];
+let files = [];
+let shownFiles = [];
+let currentFile = null;
+let selecting = false;
+let selectMode = "save"; // "save" | "delete"
+let selected = new Set();
+let toastTimer = null;
+
+const listEl     = document.getElementById("list");
+const emptyEl    = document.getElementById("empty");
+const emptyLabel = document.getElementById("emptyLabel");
+const readerEl   = document.getElementById("reader");
+const readerText = document.getElementById("readerText");
+const pageTitle  = document.getElementById("pageTitle");
+const searchBar  = document.getElementById("searchBar");
+const searchInput= document.getElementById("searchInput");
+const selectBar  = document.getElementById("selectBar");
+const selCount   = document.getElementById("selCount");
+const selConfirmBtn = document.getElementById("selConfirm");
+const toastEl    = document.getElementById("toast");
+const importInput= document.getElementById("importInput");
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2200);
+}
+
+document.getElementById("backBtn").addEventListener("click", (e) => {
+  e.preventDefault();
+  if (readerEl.classList.contains("open")){
+    showList();
+  } else if (selecting){
+    exitSelecting();
+  } else if (searchBar.classList.contains("open")){
+    searchBar.classList.remove("open");
+    searchInput.value = "";
+    render();
+  } else {
+    location.href = "index.html";
+  }
+});
+
+function iconSvg(){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>`;
+}
+
+function showList(){
+  readerEl.classList.remove("open");
+  currentFile = null;
+  pageTitle.textContent = "새로운 메모";
+  readerText.textContent = "";
+  render();
+}
+
+function render(query){
+  const q = (query || "").trim().toLowerCase();
+  const shown = q === "" ? files : files.filter(f => f.toLowerCase().includes(q));
+  shownFiles = shown;
+
+  if (files.length === 0){
+    listEl.style.display = "none";
+    emptyEl.style.display = "flex";
+    emptyLabel.textContent = "비어있음";
+    return;
+  }
+  if (shown.length === 0){
+    listEl.style.display = "none";
+    emptyEl.style.display = "flex";
+    emptyLabel.textContent = "검색 결과 없음";
+    return;
+  }
+
+  emptyEl.style.display = "none";
+  listEl.style.display = "block";
+  listEl.className = "ios-list" + (selecting ? " selecting" : "");
+  listEl.innerHTML = shown.map(f => {
+    const isSel = selected.has(f);
+    return `<div class="irow${isSel ? " selected" : ""}" data-file="${escapeHtml(f)}">
+              <div class="ischeck">${isSel ? "✓" : ""}</div>
+              <div class="iicon">${iconSvg()}</div>
+              <div class="itxt"><div class="t">${escapeHtml(f)}</div><div class="s">${extOf(f).toUpperCase()}</div></div>
+              <div class="chev">›</div>
+            </div>`;
+  }).join("");
+  Array.from(listEl.querySelectorAll(".irow")).forEach(el => {
+    el.addEventListener("click", () => {
+      const f = el.getAttribute("data-file");
+      if (selecting) toggleSelect(f); else openMemo(f);
+    });
+  });
+}
+
+function downloadRaw(f){
+  const a = document.createElement("a");
+  a.href = "MEMO/" + encodeURIComponent(f);
+  a.download = f;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function openMemo(f){
+  if (!PREVIEWABLE.includes(extOf(f))){
+    downloadRaw(f);
+    showToast("이 형식은 미리보기 대신 다운로드돼요.");
+    return;
+  }
+  currentFile = f;
+  pageTitle.textContent = f;
+  readerText.textContent = "불러오는 중...";
+  readerEl.classList.add("open");
+  try{
+    const res = await fetch("MEMO/" + encodeURIComponent(f));
+    const text = await res.text();
+    readerText.textContent = text;
+  }catch(e){
+    readerText.textContent = "이 메모를 불러오지 못했어요.";
+  }
+}
+
+async function load(){
+  try{
+    const all = await fetchJSON("api/list_files.php?dir=MEMO");
+    files = all.filter(f => f.toLowerCase() !== "readme.txt");
+    selected = new Set(Array.from(selected).filter(f => files.includes(f)));
+    updateSelCount();
+    render(searchInput.value);
+  }catch(e){
+    listEl.style.display = "none";
+    emptyEl.style.display = "flex";
+    emptyLabel.innerHTML = "⚠️ 목록을 불러오지 못했어요";
+  }
+}
+
+/* ---- 불러오기: 실제 기기에서 파일 선택 후 MEMO 폴더로 업로드 ---- */
+document.getElementById("btnReload").addEventListener("click", () => {
+  importInput.click();
+});
+importInput.addEventListener("change", async () => {
+  const fl = importInput.files;
+  if (!fl || fl.length === 0) return;
+  const hasInvalid = Array.from(fl).some(f => !IMPORT_ALLOWED.includes(extOf(f.name)));
+  if (hasInvalid){
+    showToast("지원되지않은 파일형식");
+    importInput.value = "";
+    return;
+  }
+  const fd = new FormData();
+  Array.from(fl).forEach(f => fd.append("files[]", f));
+  showToast("불러오는 중...");
+  try{
+    const res = await fetch("api/memo_upload.php", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok || data.error){
+      showToast(data.error || "불러오지 못했어요.");
+    } else {
+      showToast(`${data.saved.length}개 불러왔어요.`);
+      showList();
+      load();
+    }
+  }catch(e){
+    showToast("불러오지 못했어요. 서버 연결을 확인해주세요.");
+  }
+  importInput.value = "";
+});
+
+/* ---- 저장하기: 보고 있는 메모는 바로 저장, 목록에서는 선택 후 저장(다중 선택 시 zip) ---- */
+document.getElementById("btnSave").addEventListener("click", () => {
+  if (selecting){ exitSelecting(); return; }
+  if (readerEl.classList.contains("open")){
+    downloadRaw(currentFile);
+    return;
+  }
+  if (files.length === 0){
+    alert("저장할 메모가 없어요.");
+    return;
+  }
+  enterSelecting("save");
+});
+
+function enterSelecting(mode){
+  selecting = true;
+  selectMode = mode || "save";
+  selected = new Set();
+  searchBar.classList.remove("open");
+  selectBar.classList.add("open");
+  selConfirmBtn.textContent = selectMode === "delete" ? "삭제" : "저장";
+  selConfirmBtn.classList.toggle("danger", selectMode === "delete");
+  updateSelCount();
+  render(searchInput.value);
+}
+function exitSelecting(){
+  selecting = false;
+  selectMode = "save";
+  selected = new Set();
+  selConfirmBtn.textContent = "저장";
+  selConfirmBtn.classList.remove("danger");
+  selectBar.classList.remove("open");
+  render(searchInput.value);
+}
+function updateSelCount(){
+  selCount.textContent = selected.size + "개 선택됨";
+}
+function toggleSelect(f){
+  if (selected.has(f)) selected.delete(f); else selected.add(f);
+  updateSelCount();
+  render(searchInput.value);
+}
+document.getElementById("selCancel").addEventListener("click", exitSelecting);
+document.getElementById("selAll").addEventListener("click", () => {
+  if (selected.size === shownFiles.length){
+    selected.clear();
+  } else {
+    shownFiles.forEach(f => selected.add(f));
+  }
+  updateSelCount();
+  render(searchInput.value);
+});
+document.getElementById("selConfirm").addEventListener("click", async () => {
+  if (selected.size === 0){
+    alert(selectMode === "delete" ? "삭제할 메모를 선택해주세요." : "저장할 메모를 선택해주세요.");
+    return;
+  }
+  const list = Array.from(selected);
+  if (selectMode === "delete"){
+    if (!confirm(list.length + "개의 메모를 삭제할까요?")) return;
+    await deleteMany(list);
+    exitSelecting();
+    load();
+    return;
+  }
+  if (list.length === 1){
+    downloadRaw(list[0]);
+  } else {
+    await saveAsZip(list);
+  }
+  exitSelecting();
+});
+
+async function deleteMany(list){
+  showToast("삭제하는 중...");
+  let okCount = 0;
+  for (const f of list){
+    try{
+      const body = new URLSearchParams();
+      body.set("file", f);
+      const res = await fetch("api/memo_delete.php", { method: "POST", body });
+      const data = await res.json();
+      if (res.ok && !data.error) okCount++;
+    }catch(e){}
+  }
+  if (okCount === list.length){
+    showToast(okCount + "개 삭제했어요.");
+  } else {
+    showToast(okCount + "개 삭제, " + (list.length - okCount) + "개 실패했어요.");
+  }
+}
+
+async function saveAsZip(list){
+  showToast("압축하는 중...");
+  try{
+    const zip = new JSZip();
+    for (const f of list){
+      const res = await fetch("MEMO/" + encodeURIComponent(f));
+      const buf = await res.arrayBuffer();
+      zip.file(f, buf);
+    }
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "memo_" + Date.now() + ".zip";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast("압축 파일로 저장했어요.");
+  }catch(e){
+    showToast("압축 저장에 실패했어요.");
+  }
+}
+
+/* ---- 정보 / 삭제 (상단바 오른쪽) ---- */
+function formatBytes(n){
+  if (!Number.isFinite(n)) return "확인 불가";
+  if (n < 1024) return n + " B";
+  if (n < 1024*1024) return (n/1024).toFixed(1) + " KB";
+  return (n/1024/1024).toFixed(1) + " MB";
+}
+
+document.getElementById("btnInfo").addEventListener("click", async () => {
+  if (!currentFile){
+    showToast("먼저 메모를 선택해주세요.");
+    return;
+  }
+  let sizeText = "확인 불가";
+  let modText = "확인 불가";
+  try{
+    const res = await fetch("MEMO/" + encodeURIComponent(currentFile), { method: "HEAD", cache: "no-store" });
+    const len = res.headers.get("Content-Length");
+    const mod = res.headers.get("Last-Modified");
+    if (len) sizeText = formatBytes(Number(len));
+    if (mod) modText = new Date(mod).toLocaleString("ko-KR");
+  }catch(e){}
+  alert(
+    "파일명: " + currentFile + "\n" +
+    "형식: " + extOf(currentFile).toUpperCase() + "\n" +
+    "크기: " + sizeText + "\n" +
+    "수정일: " + modText
+  );
+});
+
+document.getElementById("btnDelete").addEventListener("click", () => {
+  if (selecting){
+    if (selectMode === "delete"){ exitSelecting(); return; }
+    // 저장용 선택 중이었다면 삭제 모드로 전환
+    enterSelecting("delete");
+    return;
+  }
+  const wasReading = readerEl.classList.contains("open");
+  const openedFile = currentFile;
+  if (wasReading) showList();
+  if (files.length === 0){
+    alert("삭제할 메모가 없어요.");
+    return;
+  }
+  enterSelecting("delete");
+  if (wasReading && openedFile) toggleSelect(openedFile);
+});
+
+/* ---- 검색 ---- */
+document.getElementById("btnSearch").addEventListener("click", () => {
+  if (selecting) exitSelecting();
+  showList();
+  searchBar.classList.toggle("open");
+  if (searchBar.classList.contains("open")){
+    setTimeout(() => searchInput.focus(), 50);
+  } else {
+    searchInput.value = "";
+    render();
+  }
+});
+searchInput.addEventListener("input", () => render(searchInput.value));
+
+/* ---- 글쓰기: 비밀번호 확인 후 새 메모 작성 ---- */
+const writeScreen   = document.getElementById("writeScreen");
+const writeHeader    = document.getElementById("writeHeader");
+const writeSaveBtn   = document.getElementById("writeSave");
+const writePwStep    = document.getElementById("writePwStep");
+const writeFormStep  = document.getElementById("writeFormStep");
+const writePwInput   = document.getElementById("writePwInput");
+const writePwMsg     = document.getElementById("writePwMsg");
+const memoTitle      = document.getElementById("memoTitle");
+const memoContent    = document.getElementById("memoContent");
+const writeMsg       = document.getElementById("writeMsg");
+
+function showWriteStep(step){
+  writePwStep.style.display   = (step === "pw")   ? "block" : "none";
+  writeFormStep.style.display = (step === "form") ? "flex"  : "none";
+  writeHeader.textContent = (step === "pw") ? "비밀번호 확인" : "새로운 메모";
+  writeSaveBtn.style.visibility = (step === "form") ? "visible" : "hidden";
+}
+function openWrite(){
+  writePwInput.value = "";
+  writePwMsg.textContent = "";
+  showWriteStep("pw");
+  writeScreen.classList.add("open");
+  setTimeout(() => writePwInput.focus(), 50);
+}
+function closeWrite(){
+  writeScreen.classList.remove("open");
+}
+document.getElementById("btnWrite").addEventListener("click", openWrite);
+document.getElementById("emptyPlus").addEventListener("click", openWrite);
+document.getElementById("writeCancel").addEventListener("click", closeWrite);
+
+document.getElementById("writePwOk").addEventListener("click", () => {
+  if (writePwInput.value !== "3553"){
+    writePwMsg.textContent = "비밀번호가 올바르지 않습니다.";
+    return;
+  }
+  writePwMsg.textContent = "";
+  memoTitle.value = "";
+  memoContent.value = "";
+  writeMsg.textContent = "";
+  showWriteStep("form");
+  setTimeout(() => memoTitle.focus(), 50);
+});
+writePwInput.addEventListener("keydown", (e) => { if (e.key === "Enter") document.getElementById("writePwOk").click(); });
+
+writeSaveBtn.addEventListener("click", async () => {
+  const title = memoTitle.value.trim();
+  const content = memoContent.value;
+  if (title === "" && content.trim() === ""){
+    writeMsg.textContent = "내용을 입력해주세요.";
+    return;
+  }
+  writeMsg.textContent = "저장하는 중...";
+  try{
+    const body = new URLSearchParams();
+    body.set("title", title);
+    body.set("content", content);
+    const res = await fetch("api/memo_write.php", { method: "POST", body });
+    const data = await res.json();
+    if (!res.ok || data.error){
+      writeMsg.textContent = data.error || "저장하지 못했어요.";
+      return;
+    }
+    writeMsg.textContent = "";
+    closeWrite();
+    showList();
+    load();
+  }catch(e){
+    writeMsg.textContent = "저장하지 못했어요. 서버 연결을 확인해주세요.";
+  }
+});
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+Galaxy A52s 부팅 유지형 성능 패치\n\n기존 정상 부팅 v86 0.5.458, 메모리, VGA, BIOS 설정을 그대로 유지합니다.\nMutationObserver가 canvas style 변경을 계속 감시하던 부분을 제거하고, resize/화면 크기 변경 시에만 fitCanvas를 실행하도록 수정했습니다.\n이전 패치처럼 v86 버전이나 Win95 메모리 설정을 바꾸지 않습니다.\n

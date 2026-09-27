@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Windows 95 Web Emulator</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#111;color:#eee;font-family:Arial,"Malgun Gothic",sans-serif;overflow:hidden}
+.app{height:100%;display:flex;flex-direction:column}
+.toolbar{height:58px;background:#c0c0c0;color:#111;display:flex;align-items:center;gap:7px;padding:7px;border-bottom:2px solid #777;flex-shrink:0}
+.toolbar button,.toolbar label{font:700 13px Arial,"Malgun Gothic";color:#111;background:#c0c0c0;border:2px solid;border-color:#fff #555 #555 #fff;padding:7px 10px;cursor:pointer;white-space:nowrap}
+.toolbar button:active,.toolbar label:active{border-color:#555 #fff #fff #555}
+.toolbar input{display:none}
+.status{margin-left:auto;font-size:12px;max-width:28vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.main{flex:1;min-height:0;background:#050505;display:flex;align-items:center;justify-content:center;padding:8px}
+.screen{position:relative;cursor:default;max-width:100%;max-height:100%;aspect-ratio:4/3;background:#000;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #333;overflow:hidden}
+#screen_container{line-height:0;max-width:100%;max-height:100%}
+#screen_container canvas{display:block;max-width:100%;max-height:calc(100vh - 78px);width:auto;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;contain:strict;backface-visibility:hidden}
+#screen_container>div{display:none}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75);color:white;text-align:center;padding:20px;z-index:5}
+.overlay.hidden{display:none}
+.card{max-width:560px;background:#222;border:1px solid #555;padding:22px}
+.card h2{margin:0 0 10px;font-size:20px}.card p{font-size:13px;line-height:1.6;color:#ccc}
+.help{height:28px;background:#c0c0c0;color:#111;padding:6px 9px;font-size:11px;flex-shrink:0}
+.back-btn{position:fixed;left:12px;bottom:12px;z-index:20;display:inline-flex;align-items:center;gap:6px;padding:9px 15px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;font:700 13px Arial,"Malgun Gothic";text-decoration:none;border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(2px)}
+.back-btn:active{background:rgba(0,0,0,.8)}
+@media(max-width:700px){.toolbar{height:auto;min-height:58px;overflow-x:auto}.status{display:none}.toolbar button,.toolbar label{padding:8px 9px}.help{display:none}}
+
+.hidden{display:none!important}
+
+/* 진행률 표시 (Win95.zip 로딩) */
+.progress-wrap{width:100%;height:14px;background:#333;border:1px solid #555;margin:12px 0 6px;overflow:hidden}
+.progress-bar{height:100%;width:0%;background:#4caf50;transition:width .15s linear}
+.progress-info{font-size:12px;color:#ccc;margin:4px 0;line-height:1.5}
+
+/* 가상 키보드 */
+.vkbd{position:fixed;left:0;right:0;bottom:0;z-index:16;background:rgba(18,18,18,.94);border-top:2px solid #666;padding:6px;display:flex;flex-direction:column;gap:4px;max-height:56vh;overflow-y:auto}
+.vkbd-row{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.vkbd-row::-webkit-scrollbar{display:none}
+.vk{flex:0 0 auto;min-width:30px;height:36px;padding:0 8px;background:#c0c0c0;color:#111;border:2px solid;border-color:#fff #555 #555 #fff;font:700 12px Arial,"Malgun Gothic";display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none}
+.vk.pressed{border-color:#555 #fff #fff #555;background:#8fd08f}
+.vk.wide{min-width:66px}
+.vk.xwide{min-width:120px;flex:1 1 auto}
+.vkbd-close{position:absolute;top:-30px;right:6px;background:#c0c0c0;color:#111;border:2px solid;border-color:#fff #555 #555 #fff;font:700 12px Arial;padding:5px 9px}
+
+/* 조이스틱 / 게임패드 */
+.joypad{position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;justify-content:space-between;align-items:flex-end;padding:16px;pointer-events:none}
+.dpad{position:relative;width:138px;height:138px;pointer-events:auto}
+.dpad .jb{position:absolute;width:46px;height:46px;background:rgba(192,192,192,.8);border:2px solid;border-color:#fff #555 #555 #fff;display:flex;align-items:center;justify-content:center;font-size:19px;color:#111;user-select:none;-webkit-user-select:none;touch-action:none}
+.dpad .jb.pressed{background:rgba(143,208,143,.9)}
+.dpad .up{top:0;left:46px}
+.dpad .down{top:92px;left:46px}
+.dpad .left{top:46px;left:0}
+.dpad .right{top:46px;left:92px}
+.action-pad{display:flex;flex-wrap:wrap;gap:10px;width:140px;justify-content:flex-end;pointer-events:auto}
+.action-pad .jb{width:54px;height:54px;border-radius:50%;background:rgba(192,192,192,.8);border:2px solid;border-color:#fff #555 #555 #fff;display:flex;align-items:center;justify-content:center;font:700 12px Arial;color:#111;user-select:none;-webkit-user-select:none;touch-action:none}
+.action-pad .jb.pressed{background:rgba(143,208,143,.9)}
+</style>
+
+<style id="windows95-complete-patch">
+/* 안내문: 툴바 아래의 가로형 흰색 띠 */
+#drag-hint{
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-height:42px!important;
+  padding:10px 12px!important;
+  margin:0!important;
+  background:#fff!important;
+  color:#000!important;
+  border:0!important;
+  text-align:center!important;
+  white-space:normal!important;
+  word-break:keep-all!important;
+  overflow-wrap:normal!important;
+  font-family:Arial,"Malgun Gothic",sans-serif!important;
+  font-size:16px!important;
+  font-weight:700!important;
+  line-height:1.35!important;
+  flex:0 0 auto!important;
+}
+html,body{width:100%;height:100%;margin:0;background:#000!important;overflow:hidden}
+.app{width:100%;height:100%;min-width:0;background:#000!important}
+.main{
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  padding:0!important;
+  margin:0!important;
+  background:#000!important;
+  overflow:hidden!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+.screen{
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  min-width:0!important;
+  min-height:0!important;
+  aspect-ratio:auto!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background:#000!important;
+  overflow:hidden!important;
+}
+#screen_container{
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  background:#000!important;
+  overflow:hidden!important;
+  touch-action:none!important;
+  -webkit-user-select:none!important;
+  user-select:none!important;
+}
+#screen_container canvas{
+  display:block!important;
+  width:auto!important;
+  height:auto!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  image-rendering:pixelated!important;
+  image-rendering:crisp-edges!important;
+  touch-action:none!important;
+}
+#screen,#screen_container{touch-action:none!important}
+:fullscreen{background:#000!important;width:100%!important;height:100%!important}
+:fullscreen .toolbar,:fullscreen #drag-hint,:fullscreen .help{display:none!important}
+:fullscreen .app,:fullscreen .main,:fullscreen .screen,:fullscreen #screen_container{
+  width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;
+}
+@media(max-width:700px){
+  #drag-hint{min-height:40px!important;padding:9px 8px!important;font-size:14px!important}
+}
+</style>
+
+
+<style id="mobile-performance-safe">
+/* 불필요한 페이지 스크롤과 선택을 줄여 모바일 입력 지연을 완화 */
+#screen_container canvas{contain:layout paint;backface-visibility:hidden}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <div class="toolbar">
+    <button id="boot">▶ 부팅</button>
+    <button id="reset">↻ 다시시작</button>
+    <button id="fullscreen">⛶ 전체화면</button>
+    <button id="toggleKbd">⌨ 키보드</button>
+    <button id="toggleJoy">🕹 조이스틱</button>
+    <button id="folderDrive">📁 폴더드라이브</button>
+    <label>🎮 게임추가<input id="imageFile" type="file" accept=".img,application/octet-stream"></label>
+    <input id="folderInput" type="file" webkitdirectory directory multiple hidden>
+    <button id="info">ℹ 정보</button>
+    <span class="status" id="status">Win95.zip 자동 로드 준비</span>
+  </div>
+<div id="drag-hint" role="note">버튼쪽을 옆으로 밀어보세요.</div>
+<div class="main">
+    <div class="screen" id="screen">
+      <div id="screen_container">
+        <div></div>
+        <canvas style="display:none"></canvas>
+      </div>
+      <div class="overlay" id="overlay">
+        <div class="card">
+          <h2>Windows 95 Web Emulator</h2>
+          <p id="cardMsg"><b>Win95.zip</b>이 자동으로 연결되어 있습니다.</p>
+          <div class="progress-wrap hidden" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+          <p class="progress-info hidden" id="progressText"></p>
+          <p class="progress-info hidden" id="progressEta"></p>
+          <button id="startOverlay">▶ Windows 95 시작</button>
+        </div>
+      </div>
+      <div class="overlay hidden" id="infoOverlay">
+        <div class="card">
+          <h2>정보</h2>
+          <p>v86 기반 브라우저 Windows 95 에뮬레이터입니다. 서버의 <b>Win95.zip</b>에서 Win95.img를 꺼내 자동으로 부팅합니다.</p>
+          <p>Windows 95가 실행된 상태에서 <b>게임추가</b> 버튼으로 .img 파일을 선택하면, 재부팅 없이 플로피 드라이브(A:)로 추가되어 '내 컴퓨터'에서 바로 열 수 있습니다.</p>
+          <button id="closeInfo">닫기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <a class="back-btn" id="backBtn" href="../index.html">← 돌아가기</a>
+  <div class="help">🖱 Windows 95 화면을 클릭하면 마우스가 Windows 95에 잡힙니다. ESC로 해제합니다. · v86 x86 에뮬레이션</div>
+
+  <!-- 가상 키보드 -->
+  <div class="vkbd hidden" id="vkbd">
+    <div class="vkbd-row">
+      <div class="vk" data-key="F1">F1</div><div class="vk" data-key="F2">F2</div><div class="vk" data-key="F3">F3</div><div class="vk" data-key="F4">F4</div><div class="vk" data-key="F5">F5</div><div class="vk" data-key="F6">F6</div><div class="vk" data-key="F7">F7</div><div class="vk" data-key="F8">F8</div><div class="vk" data-key="F9">F9</div><div class="vk" data-key="F10">F10</div><div class="vk" data-key="F11">F11</div><div class="vk" data-key="F12">F12</div>
+    </div>
+    <div class="vkbd-row">
+      <div class="vk" data-key="Escape">Esc</div><div class="vk" data-key="Digit1">1</div><div class="vk" data-key="Digit2">2</div><div class="vk" data-key="Digit3">3</div><div class="vk" data-key="Digit4">4</div><div class="vk" data-key="Digit5">5</div><div class="vk" data-key="Digit6">6</div><div class="vk" data-key="Digit7">7</div><div class="vk" data-key="Digit8">8</div><div class="vk" data-key="Digit9">9</div><div class="vk" data-key="Digit0">0</div><div class="vk" data-key="Minus">-</div><div class="vk" data-key="Equal">=</div><div class="vk wide" data-key="Backspace">⌫</div>
+    </div>
+    <div class="vkbd-row">
+      <div class="vk wide" data-key="Tab">Tab</div><div class="vk" data-key="KeyQ">Q</div><div class="vk" data-key="KeyW">W</div><div class="vk" data-key="KeyE">E</div><div class="vk" data-key="KeyR">R</div><div class="vk" data-key="KeyT">T</div><div class="vk" data-key="KeyY">Y</div><div class="vk" data-key="KeyU">U</div><div class="vk" data-key="KeyI">I</div><div class="vk" data-key="KeyO">O</div><div class="vk" data-key="KeyP">P</div><div class="vk" data-key="BracketLeft">[</div><div class="vk" data-key="BracketRight">]</div>
+    </div>
+    <div class="vkbd-row">
+      <div class="vk wide" data-key="ControlLeft">Ctrl</div><div class="vk" data-key="KeyA">A</div><div class="vk" data-key="KeyS">S</div><div class="vk" data-key="KeyD">D</div><div class="vk" data-key="KeyF">F</div><div class="vk" data-key="KeyG">G</div><div class="vk" data-key="KeyH">H</div><div class="vk" data-key="KeyJ">J</div><div class="vk" data-key="KeyK">K</div><div class="vk" data-key="KeyL">L</div><div class="vk" data-key="Semicolon">;</div><div class="vk" data-key="Quote">'</div><div class="vk xwide" data-key="Enter">Enter ↵</div>
+    </div>
+    <div class="vkbd-row">
+      <div class="vk wide" data-key="ShiftLeft">Shift</div><div class="vk" data-key="KeyZ">Z</div><div class="vk" data-key="KeyX">X</div><div class="vk" data-key="KeyC">C</div><div class="vk" data-key="KeyV">V</div><div class="vk" data-key="KeyB">B</div><div class="vk" data-key="KeyN">N</div><div class="vk" data-key="KeyM">M</div><div class="vk" data-key="Comma">,</div><div class="vk" data-key="Period">.</div><div class="vk" data-key="Slash">/</div><div class="vk wide" data-key="ShiftRight">Shift</div>
+    </div>
+    <div class="vkbd-row">
+      <div class="vk" data-key="MetaLeft">Win</div><div class="vk" data-key="AltLeft">Alt</div><div class="vk xwide" data-key="Space">Space</div><div class="vk" data-key="AltRight">Alt</div><div class="vk" data-key="ArrowLeft">←</div><div class="vk" data-key="ArrowUp">↑</div><div class="vk" data-key="ArrowDown">↓</div><div class="vk" data-key="ArrowRight">→</div><div class="vk" data-key="Delete">Del</div>
+    </div>
+  </div>
+
+  <!-- 조이스틱 / 게임패드 (방향키 + 액션 버튼) -->
+  <div class="joypad hidden" id="joypad">
+    <div class="dpad">
+      <div class="jb up" data-key="ArrowUp">▲</div>
+      <div class="jb down" data-key="ArrowDown">▼</div>
+      <div class="jb left" data-key="ArrowLeft">◀</div>
+      <div class="jb right" data-key="ArrowRight">▶</div>
+    </div>
+    <div class="action-pad">
+      <div class="jb" data-key="KeyZ">Z</div>
+      <div class="jb" data-key="KeyX">X</div>
+      <div class="jb" data-key="ControlLeft">Ctrl</div>
+      <div class="jb" data-key="Space">␣</div>
+      <div class="jb" data-key="Enter">↵</div>
+      <div class="jb" data-key="AltLeft">Alt</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/v86@0.5.458/build/libv86.js"></script>
+<script>
+"use strict";
+
+const CDN = {
+  wasm: "https://cdn.jsdelivr.net/npm/v86@0.5.458/build/v86.wasm",
+  bios: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/seabios.bin",
+  vga: "https://cdn.jsdelivr.net/gh/copy/v86@master/bios/vgabios.bin"
+};
+
+let emulator = null;
+let currentBuffer = null;
+let currentName = "Win95.zip";
+const $ = id => document.getElementById(id);
+const status = t => $("status").textContent=t;
+
+/* ===== 가상 키보드 / 조이스틱: PS/2 스캔코드(세트1) 테이블 =====
+   emulator.bus.send("keyboard-code", byte) 로 한 바이트씩 전송한다.
+   배열의 마지막 바이트에 0x80을 OR 하면 키를 떼는(break) 코드가 된다.
+   0xE0으로 시작하는 배열은 확장(extended) 키다. */
+const SCANCODES = {
+  Escape:[0x01],
+  Digit1:[0x02],Digit2:[0x03],Digit3:[0x04],Digit4:[0x05],Digit5:[0x06],
+  Digit6:[0x07],Digit7:[0x08],Digit8:[0x09],Digit9:[0x0a],Digit0:[0x0b],
+  Minus:[0x0c],Equal:[0x0d],Backspace:[0x0e],Tab:[0x0f],
+  KeyQ:[0x10],KeyW:[0x11],KeyE:[0x12],KeyR:[0x13],KeyT:[0x14],KeyY:[0x15],
+  KeyU:[0x16],KeyI:[0x17],KeyO:[0x18],KeyP:[0x19],
+  BracketLeft:[0x1a],BracketRight:[0x1b],Enter:[0x1c],ControlLeft:[0x1d],
+  KeyA:[0x1e],KeyS:[0x1f],KeyD:[0x20],KeyF:[0x21],KeyG:[0x22],KeyH:[0x23],
+  KeyJ:[0x24],KeyK:[0x25],KeyL:[0x26],
+  Semicolon:[0x27],Quote:[0x28],Backquote:[0x29],ShiftLeft:[0x2a],Backslash:[0x2b],
+  KeyZ:[0x2c],KeyX:[0x2d],KeyC:[0x2e],KeyV:[0x2f],KeyB:[0x30],KeyN:[0x31],KeyM:[0x32],
+  Comma:[0x33],Period:[0x34],Slash:[0x35],ShiftRight:[0x36],
+  AltLeft:[0x38],Space:[0x39],CapsLock:[0x3a],
+  F1:[0x3b],F2:[0x3c],F3:[0x3d],F4:[0x3e],F5:[0x3f],F6:[0x40],
+  F7:[0x41],F8:[0x42],F9:[0x43],F10:[0x44],F11:[0x57],F12:[0x58],
+  Insert:[0xe0,0x52],Delete:[0xe0,0x53],Home:[0xe0,0x47],End:[0xe0,0x4f],
+  PageUp:[0xe0,0x49],PageDown:[0xe0,0x51],
+  ArrowUp:[0xe0,0x48],ArrowDown:[0xe0,0x50],ArrowLeft:[0xe0,0x4b],ArrowRight:[0xe0,0x4d],
+  ControlRight:[0xe0,0x1d],AltRight:[0xe0,0x38],
+  MetaLeft:[0xe0,0x5b],MetaRight:[0xe0,0x5c],ContextMenu:[0xe0,0x5d],
+};
+
+function sendScanBytes(bytes){
+  if(!emulator || typeof emulator.bus === "undefined") return;
+  for(const b of bytes) emulator.bus.send("keyboard-code", b);
+}
+function pressKey(name){
+  const c = SCANCODES[name];
+  if(!c){ return; }
+  sendScanBytes(c);
+}
+function releaseKey(name){
+  const c = SCANCODES[name];
+  if(!c){ return; }
+  const rel = c.slice();
+  rel[rel.length-1] = rel[rel.length-1] | 0x80;
+  sendScanBytes(rel);
+}
+
+/* 버튼(가상 키보드 .vk, 조이스틱 .jb)에 눌림/뗌을 연결하는 공통 헬퍼.
+   pointerdown에서 누르고, pointerup/leave/cancel에서 뗀다 → 길게 눌러서
+   이동 같은 연속 입력이 필요한 게임에서도 정상 동작한다. */
+function wireVirtualButtons(container){
+  if(!container) return;
+  // pointerId별로 어떤 버튼을 누르고 있는지 추적 → 여러 손가락으로
+  // 방향키 + 액션 버튼을 동시에 눌러도(멀티터치) 정확히 동작한다.
+  const activePointers = new Map();
+  const release=(pointerId)=>{
+    const info = activePointers.get(pointerId);
+    if(!info) return;
+    releaseKey(info.key);
+    info.el.classList.remove("pressed");
+    activePointers.delete(pointerId);
+  };
+  container.addEventListener("pointerdown", e=>{
+    const el=e.target.closest("[data-key]");
+    if(!el) return;
+    e.preventDefault();
+    if(!emulator){ status("먼저 Windows 95를 부팅하세요."); return; }
+    el.classList.add("pressed");
+    pressKey(el.dataset.key);
+    activePointers.set(e.pointerId, {el, key:el.dataset.key});
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  container.addEventListener("pointerup", e=>release(e.pointerId));
+  container.addEventListener("pointercancel", e=>release(e.pointerId));
+  container.addEventListener("lostpointercapture", e=>release(e.pointerId));
+  container.addEventListener("contextmenu", e=>e.preventDefault());
+}
+
+function setCanvas(){
+  const c=$("screen_container").querySelector("canvas");
+  if(c){ c.style.display="block"; }
+  requestAnimationFrame(fitCanvas);
+}
+function captureMouse(){
+  if(!emulator){ status("먼저 Windows 95를 부팅하세요."); return; }
+  // 이미 이 화면에 마우스가 잠겨 있으면 다시 요청하지 않습니다.
+  // (매번 재요청하면 브라우저가 포인터 락 보안 쿨다운/안내 문구를 다시 띄우면서
+  //  화면을 누를 때마다 잠깐 멈춘 것처럼 보이는 원인이 됩니다.)
+  if(document.pointerLockElement){ return; }
+  try{
+    // VMware/VirtualBox와 같은 방식: v86 자체의 Pointer Lock을 사용합니다.
+    // 브라우저의 실제 커서는 숨겨지고 movementX/Y가 Windows 95 내부 PS/2 마우스로 전달됩니다.
+    if(typeof emulator.lock_mouse === "function") {
+      emulator.lock_mouse();
+    } else {
+      status("마우스 잠금 기능을 사용할 수 없습니다.");
+    }
+  }catch(e){
+    console.error(e);
+    status("마우스 잠금 실패: "+e.message);
+  }
+}
+
+let _fitPending=false;
+function fitCanvas(){
+  // 같은 프레임에 여러 번 호출되어도 실제 계산은 한 번만 수행합니다.
+  if(_fitPending) return;
+  _fitPending=true;
+  requestAnimationFrame(()=>{
+    _fitPending=false;
+    const container=$("screen_container");
+    const canvas=container && container.querySelector("canvas");
+    if(!container || !canvas) return;
+    const w=container.clientWidth, h=container.clientHeight;
+    const nw=canvas.width || 640, nh=canvas.height || 480;
+    if(!w || !h || !nw || !nh) return;
+    const scale=Math.min(w/nw,h/nh);
+    const cw=Math.max(1,Math.floor(nw*scale));
+    const ch=Math.max(1,Math.floor(nh*scale));
+    const newW=cw+"px", newH=ch+"px";
+    // 값이 실제로 바뀔 때만 style을 갱신 → 아래 MutationObserver가
+    // 스스로를 다시 호출하는 무한 피드백 루프를 방지합니다.
+    if(canvas.style.width!==newW) canvas.style.width=newW;
+    if(canvas.style.height!==newH) canvas.style.height=newH;
+  });
+}
+
+
+/* 모바일 호스트 성능 프로필
+   - Galaxy A52s / iPhone 12 mini는 ARM64 호스트이므로
+     v86의 x86 CPU 자체를 "스냅드래곤/애플 CPU"로 바꾸는 것은 불가능합니다.
+   - 대신 v86의 WASM JIT는 유지하고, 모바일에서 불필요한 메모리/화면 작업을
+     줄여 CPU 점유율과 발열을 낮추는 방향으로 자동 조정합니다.
+*/
+function getMobilePerformanceProfile(){
+  const ua=navigator.userAgent||"";
+  const isIOS=/iPhone|iPad|iPod/i.test(ua);
+  const isAndroid=/Android/i.test(ua);
+  const isA52s=/SM-A528|SM-A526|A52s/i.test(ua);
+  const isIPhone12Mini=/iPhone(?!.*iPad)/i.test(ua) && /OS 14_|OS 15_|OS 16_|OS 17_|OS 18_|OS 26_/i.test(ua);
+  const cores=navigator.hardwareConcurrency||4;
+
+  if((isAndroid && isA52s) || isIPhone12Mini){
+    return {
+      name:isA52s ? "Galaxy A52s 모바일 최적화" : "iPhone 12 mini 모바일 최적화",
+      memory:64*1024*1024,
+      vga:4*1024*1024,
+      mobile:true
+    };
+  }
+
+  if(isAndroid || isIOS){
+    return {
+      name:"모바일 성능 최적화",
+      memory:64*1024*1024,
+      vga:4*1024*1024,
+      mobile:true
+    };
+  }
+
+  return {
+    name:"PC 성능 프로필",
+    memory:64*1024*1024,
+    vga:8*1024*1024,
+    mobile:false
+  };
+}
+
+
+/* ===== 서버 Win95.zip 단일 IMG 추출 =====
+   이 페이지는 서버에서 Win95.zip을 받아 ZIP 안의 Win95.img 하나만
+   브라우저에서 풀어 v86 hda로 사용합니다. 외부 ZIP 라이브러리가 필요 없습니다. */
+async function unzipSingleImg(zipBuffer){
+  const z=new DataView(zipBuffer);
+  if(z.getUint32(0,true)!==0x04034b50) throw new Error("Win95.zip 형식이 올바르지 않습니다.");
+  const method=z.getUint16(8,true);
+  const compressedSize=z.getUint32(18,true);
+  const uncompressedSize=z.getUint32(22,true);
+  const nameLen=z.getUint16(26,true);
+  const extraLen=z.getUint16(28,true);
+  const nameBytes=new Uint8Array(zipBuffer,30,nameLen);
+  const name=new TextDecoder().decode(nameBytes);
+  if(!/\.img$/i.test(name)) throw new Error("ZIP 안에 IMG 파일이 없습니다.");
+  const dataStart=30+nameLen+extraLen;
+  const compressed=new Uint8Array(zipBuffer,dataStart,compressedSize);
+
+  if(method===0){
+    return compressed.slice().buffer;
+  }
+  if(method!==8){
+    throw new Error("지원하지 않는 ZIP 압축 방식입니다: "+method);
+  }
+  if(typeof DecompressionStream==="undefined"){
+    throw new Error("이 브라우저는 ZIP 압축 해제를 지원하지 않습니다. Chrome/Edge/Safari 최신 버전을 사용하세요.");
+  }
+  let out;
+  try{
+    const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    out=await new Response(stream).arrayBuffer();
+  }catch(rawErr){
+    // 일부 브라우저는 deflate-raw 대신 deflate만 노출합니다.
+    const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream("deflate"));
+    out=await new Response(stream).arrayBuffer();
+  }
+  if(uncompressedSize && out.byteLength!==uncompressedSize){
+    console.warn("IMG 크기 확인:",out.byteLength,uncompressedSize);
+  }
+  return out;
+}
+
+/* ===== FAT16 폴더드라이브 =====
+   Windows 95가 일반 HDD로 인식할 수 있도록 브라우저에서 FAT16 raw image를
+   만들고 v86의 hdb로 연결합니다. 8.3 이름으로 저장하므로 긴 파일명도
+   Windows 95에서 파일 자체는 볼 수 있습니다. */
+const FOLDER_DRIVE_BYTES=128*1024*1024;
+const FAT_SECTOR=512;
+const FAT_SPC=4;              // 2 KiB/cluster
+const FAT_ROOT_ENTRIES=512;
+const FAT_RESERVED=1;
+const FAT_NUM=2;
+
+function putStr(a,off,len,str){
+  for(let i=0;i<len;i++) a[off+i]=i<str.length?str.charCodeAt(i)&255:0x20;
+}
+function u16(a,o,v){a[o]=v&255;a[o+1]=(v>>>8)&255;}
+function u32(a,o,v){a[o]=v&255;a[o+1]=(v>>>8)&255;a[o+2]=(v>>>16)&255;a[o+3]=(v>>>24)&255;}
+
+function createBlankFolderDriveImage(){
+  return createFat16Image([], FOLDER_DRIVE_BYTES);
+}
+function dos83(name, used){
+  name=name.replace(/[\/\\]/g,"_").trim();
+  const dot=name.lastIndexOf(".");
+  let base=(dot>0?name.slice(0,dot):name).toUpperCase().replace(/[^A-Z0-9_$~!#%&'()@^`{}-]/g,"_");
+  let ext=(dot>0?name.slice(dot+1):"").toUpperCase().replace(/[^A-Z0-9_$~!#%&'()@^`{}-]/g,"_");
+  base=base.slice(0,8); ext=ext.slice(0,3);
+  let candidate=(base||"FILE")+"."+ext;
+  if(!ext) candidate=(base||"FILE");
+  let n=1;
+  while(used.has(candidate)){
+    const tail="~"+n++;
+    const b=(base||"FILE").slice(0,Math.max(1,8-tail.length))+tail;
+    candidate=ext?b+"."+ext:b;
+  }
+  used.add(candidate);
+  return candidate;
+}
+function dateParts(date){
+  const d=date instanceof Date?date:new Date();
+  const year=Math.max(1980,Math.min(2107,d.getFullYear()));
+  return {
+    time:(d.getHours()<<11)|(d.getMinutes()<<5)|Math.floor(d.getSeconds()/2),
+    date:((year-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate()
+  };
+}
+function writeDirEntry(a,off,name,attr,cluster,size,dt){
+  const parts=name.split(".");
+  const b=(parts[0]||"").toUpperCase(), e=(parts[1]||"").toUpperCase();
+  putStr(a,off,8,b.slice(0,8));
+  putStr(a,off+8,3,e.slice(0,3));
+  a[off+11]=attr;
+  const dp=dateParts(dt);
+  u16(a,off+22,dp.time); u16(a,off+24,dp.date);
+  u16(a,off+26,cluster||0); u32(a,off+28,size>>>0);
+}
+function createFat16Image(entries, imageBytes){
+  const totalSectors=imageBytes/FAT_SECTOR;
+  let spc=FAT_SPC;
+  // 128 MiB / 2 KiB clusters stays within FAT16's cluster-count limit.
+  let rootSectors=(FAT_ROOT_ENTRIES*32)/FAT_SECTOR;
+  let fatSectors=1;
+  for(let i=0;i<10;i++){
+    const dataSectors=totalSectors-FAT_RESERVED-FAT_NUM*fatSectors-rootSectors;
+    const clusters=Math.floor(dataSectors/spc);
+    const next=Math.ceil((clusters+2)*2/FAT_SECTOR);
+    if(next===fatSectors)break;
+    fatSectors=next;
+  }
+  const dataStart=FAT_RESERVED+FAT_NUM*fatSectors+rootSectors;
+  const clusters=Math.floor((totalSectors-dataStart)/spc);
+  if(clusters<4096 || clusters>65524) throw new Error("FAT16 이미지 크기 계산 오류");
+
+  const a=new Uint8Array(imageBytes);
+  // BIOS Parameter Block / FAT16 boot sector
+  a[0]=0xEB;a[1]=0x3C;a[2]=0x90;
+  putStr(a,3,8,"YEONGHO");
+  u16(a,11,FAT_SECTOR); a[13]=spc; u16(a,14,FAT_RESERVED);
+  a[16]=FAT_NUM; u16(a,17,FAT_ROOT_ENTRIES);
+  if(totalSectors<65536) u16(a,19,totalSectors); else u16(a,19,0);
+  a[21]=0xF8; u16(a,22,fatSectors); u16(a,24,32); u16(a,26,64);
+  u32(a,28,0); if(totalSectors>=65536)u32(a,32,totalSectors);
+  a[36]=0x80;a[38]=0x29;u32(a,39,0x95202609);
+  putStr(a,43,11,"FOLDERDRIVE"); putStr(a,54,8,"FAT16   ");
+  a[510]=0x55;a[511]=0xAA;
+
+  const fat0=FAT_RESERVED*FAT_SECTOR;
+  const fat1=fat0+fatSectors*FAT_SECTOR;
+  const rootStart=dataStart*FAT_SECTOR;
+  const clusterBytes=spc*FAT_SECTOR;
+  const clusterOffset=cluster=>(dataStart+(cluster-2)*spc)*FAT_SECTOR;
+  const fat=new Uint16Array(a.buffer,fat0,fatSectors*FAT_SECTOR/2);
+  fat[0]=0xFFF8;fat[1]=0xFFFF;
+  const setFat=(c,v)=>{fat[c]=v;new DataView(a.buffer,fat1,fatSectors*FAT_SECTOR).setUint16(c*2,v,true);};
+  let nextCluster=2;
+  const allocChain=(count)=>{
+    const out=[];
+    for(let i=0;i<count;i++)out.push(nextCluster++);
+    for(let i=0;i<out.length-1;i++)setFat(out[i],out[i+1]);
+    setFat(out[out.length-1],0xFFFF);
+    return out;
+  };
+  const writeDirectory=(dir, isRoot=false)=>{
+    const need=Math.max(1,Math.ceil((dir.items.length+(isRoot?0:2))*32/clusterBytes));
+    const chain=isRoot?[]:allocChain(need);
+    const base=isRoot?rootStart:clusterOffset(chain[0]);
+    const cap=isRoot?FAT_ROOT_ENTRIES:need*clusterBytes/32;
+    let pos=0;
+    if(!isRoot){
+      writeDirEntry(a,base+pos*32,".",0x10,chain[0],0,dir.mtime);pos++;
+      writeDirEntry(a,base+pos*32,"..",0x10,dir.parentCluster||0,0,dir.mtime);pos++;
+    }
+    const used=new Set();
+    for(const item of dir.items){
+      if(pos>=cap) throw new Error("폴더 안의 항목 수가 너무 많습니다.");
+      const nm=dos83(item.name,used);
+      if(item.kind==="dir"){
+        item.parentCluster=isRoot?0:chain[0];
+        const subChain=writeDirectory(item,false);
+        writeDirEntry(a,base+pos*32,nm,0x10,subChain[0],0,item.mtime);pos++;
+      }else{
+        const size=item.size>>>0;
+        const cnt=Math.max(1,Math.ceil(size/clusterBytes));
+        if(nextCluster+cnt>=clusters+2) throw new Error("선택한 폴더가 128MB 한도를 초과했습니다.");
+        const ch=allocChain(cnt);
+        let remain=size, srcOff=0;
+        for(const c of ch){
+          const n=Math.min(remain,clusterBytes);
+          if(n) a.set(item.data.subarray(srcOff,srcOff+n),clusterOffset(c));
+          remain-=n;srcOff+=n;
+        }
+        writeDirEntry(a,base+pos*32,nm,0x20,ch[0],size,item.mtime);pos++;
+      }
+    }
+    return isRoot?null:chain;
+  };
+  const root={name:"",kind:"dir",items:entries,mtime:new Date(),parentCluster:0};
+  writeDirectory(root,true);
+  return a.buffer;
+}
+
+async function collectFolderItems(fileList){
+  const root={name:"",kind:"dir",items:[],mtime:new Date(),parentCluster:0};
+  const dirs=new Map([["",root]]);
+  const usedByDir=new Map();
+  let total=0;
+  for(const file of Array.from(fileList)){
+    const rel=(file.webkitRelativePath||file.name).replace(/^\/+/,"");
+    const parts=rel.split("/").filter(Boolean);
+    if(!parts.length)continue;
+    let cur=root,path="";
+    for(let i=0;i<parts.length-1;i++){
+      path=path?path+"/"+parts[i]:parts[i];
+      if(!dirs.has(path)){
+        const d={name:parts[i],kind:"dir",items:[],mtime:new Date(),parentCluster:0};
+        dirs.set(path,d);cur.items.push(d);
+      }
+      cur=dirs.get(path);
+    }
+    const data=new Uint8Array(await file.arrayBuffer());
+    total+=data.byteLength;
+    if(total>110*1024*1024) throw new Error("현재 폴더드라이브는 파일 데이터 총 110MB까지 지원합니다.");
+    cur.items.push({name:parts[parts.length-1],kind:"file",data,size:data.byteLength,mtime:new Date(file.lastModified||Date.now())});
+  }
+  return root.items;
+}
+
+async function mountFolderDrive(fileList){
+  if(!emulator) throw new Error("먼저 Windows 95를 부팅하세요.");
+  status("선택한 폴더를 G: 드라이브로 만드는 중…");
+  const items=await collectFolderItems(fileList);
+  const image=await new Promise((resolve,reject)=>{
+    setTimeout(()=>{try{resolve(createFat16Image(items,FOLDER_DRIVE_BYTES));}catch(e){reject(e)}},0);
+  });
+
+  // v86의 공식 런타임 API에는 hdb 교체 함수가 없으므로,
+  // 상태를 저장하고 동일한 하드웨어 구성(hda+hdb)으로 새 인스턴스를 만든 뒤
+  // 저장 상태를 복원합니다. 디스크 크기는 항상 128MB로 고정해 하드웨어 구성을 유지합니다.
+  const state=await emulator.save_state();
+  try{await emulator.stop();}catch(e){}
+  try{await emulator.destroy();}catch(e){}
+
+  const oldBuffer=currentBuffer;
+  emulator=null;
+  $("screen_container").innerHTML="<div></div><canvas style='display:none'></canvas>";
+  const profile=getMobilePerformanceProfile();
+  const opts={
+    wasm_path:CDN.wasm,disable_jit:false,
+    memory_size:profile.memory,vga_memory_size:profile.vga,
+    screen_container:$("screen_container"),
+    bios:{url:CDN.bios},vga_bios:{url:CDN.vga},
+    hda:{buffer:oldBuffer},hdb:{buffer:image},
+    boot_order:0x132,fastboot:true,autostart:false,
+    disable_mouse:false,disable_keyboard:false,preserve_mac_from_state_image:true
+  };
+  emulator=new V86(opts);
+
+  await new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error("에뮬레이터 상태 복원 시간이 초과되었습니다.")),30000);
+    emulator.add_listener("emulator-loaded",()=>{clearTimeout(timer);resolve();});
+  });
+  await emulator.restore_state(state);
+  emulator.run();
+  currentFolderImage=image;
+
+  // Windows 95에서 보조 HDD(D:)를 G:로 자동 연결.
+  // D: 자체도 남겨두어 문제가 생겨도 원본 드라이브를 직접 확인할 수 있습니다.
+  setTimeout(async()=>{
+    try{
+      pressKey("MetaLeft");pressKey("KeyR");
+      releaseKey("KeyR");releaseKey("MetaLeft");
+      await new Promise(r=>setTimeout(r,500));
+      emulator.keyboard_send_text("command.com /c subst G: E:\\");
+      pressKey("Enter");releaseKey("Enter");
+      status("폴더드라이브 연결 완료 · G:에서 폴더 파일을 확인하세요.");
+    }catch(e){console.warn(e);}
+  },2500);
+}
+
+let currentFolderImage=null;
+
+function makeEmulator(buffer){
+  if(emulator){ try{emulator.stop()}catch(e){} emulator=null; }
+  $("overlay").classList.add("hidden");
+  status("에뮬레이터 초기화 중…");
+
+  const profile=getMobilePerformanceProfile();
+
+  const opts={
+    wasm_path: CDN.wasm,
+
+    // v86의 WebAssembly JIT를 명시적으로 활성화.
+    disable_jit:false,
+
+    // Win95에는 64MB면 충분하므로 모바일에서도 메모리 할당을 늘리지 않습니다.
+    memory_size:profile.memory,
+
+    // 모바일 GPU/브라우저에서 매 프레임 처리량을 줄이기 위해 VGA RAM을 4MB로 축소.
+    vga_memory_size:profile.vga,
+
+    screen_container: $("screen_container"),
+    bios:{url:CDN.bios},
+    vga_bios:{url:CDN.vga},
+    hda:{buffer:buffer},
+    // 폴더드라이브용 보조 HDD를 항상 같은 크기로 장착해 두고,
+    // 폴더 선택 시 같은 하드웨어 상태를 유지한 채 내용을 교체합니다.
+    hdb:{buffer: createBlankFolderDriveImage()},
+    boot_order:0x132,
+
+    // 빠른 초기 부팅 경로. 디스크/입력/상태저장 기능은 그대로 유지합니다.
+    fastboot:true,
+    autostart:true,
+
+    disable_mouse:false,
+    disable_keyboard:false,
+    preserve_mac_from_state_image:true,
+  };
+  try{
+    emulator=new V86(opts);
+    setTimeout(()=>status(currentName+" 실행 중 · "+profile.name),1000);
+  }catch(err){
+    console.error(err);
+    status("실행 실패: "+err.message);
+    $("overlay").classList.remove("hidden");
+  }
+}
+
+
+/* ===== Win95.zip 다운로드 진행률 / 남은 시간 표시 ===== */
+function fmtBytes(n){
+  if(!isFinite(n)) return "0MB";
+  return (n/1024/1024).toFixed(1)+"MB";
+}
+function fmtSeconds(sec){
+  if(sec==null || !isFinite(sec) || sec<0) return null;
+  if(sec<1) return "1초 미만";
+  if(sec<60) return Math.ceil(sec)+"초";
+  const m=Math.floor(sec/60), s=Math.round(sec%60);
+  return s>0 ? m+"분 "+s+"초" : m+"분";
+}
+function showProgressUI(show){
+  $("progressWrap").classList.toggle("hidden", !show);
+  $("progressText").classList.toggle("hidden", !show);
+  $("progressEta").classList.toggle("hidden", !show);
+  $("startOverlay").classList.toggle("hidden", show);
+}
+function updateProgressUI(received, total, startTime, done){
+  const elapsed=(performance.now()-startTime)/1000;
+  const speed = elapsed>0.05 ? received/elapsed : 0; // bytes/sec
+  const pct = total ? Math.min(100, (received/total)*100) : null;
+  const etaSec = (!done && total && speed>0) ? (total-received)/speed : null;
+  const pctText = done ? "100%" : (pct!=null ? pct.toFixed(0)+"%" : "진행률 계산 중");
+  const sizeText = total ? fmtBytes(received)+" / "+fmtBytes(total) : fmtBytes(received)+" 받음";
+  const speedText = speed>1024 ? (speed/1024/1024).toFixed(1)+"MB/s" : "";
+  const etaFmt = fmtSeconds(etaSec);
+
+  $("progressBar").style.width=(done?100:(pct!=null?pct:0))+"%";
+  $("progressText").textContent = pctText+" · "+sizeText+(speedText?" · "+speedText:"");
+  $("progressEta").textContent = done ? "부팅 준비 중…" : ("남은 시간: "+(etaFmt || "계산 중…"));
+
+  const shortStatus = done
+    ? "Win95.zip 로드 완료 · 부팅 준비 중…"
+    : "Win95.zip 불러오는 중… "+pctText+(etaFmt?" · 약 "+etaFmt+" 남음":"");
+  status(shortStatus);
+}
+
+async function loadBundled(){
+  // 서버의 Win95.zip을 내려받아 ZIP 안의 Win95.img만 추출합니다.
+  const candidates=[
+    "images/Win95.zip",
+    "pcemu/images/Win95.zip",
+    "/html/pcemu/images/Win95.zip",
+    "html/pcemu/images/Win95.zip"
+  ];
+  for(const path of candidates){
+    try{
+      $("cardMsg").innerHTML="<b>Win95.zip</b>을 서버에서 불러오는 중입니다…";
+      showProgressUI(true);
+      updateProgressUI(0,0,performance.now(),false);
+      status("Win95.zip 읽는 중… ("+path+")");
+
+      const r=await fetch(path);
+      if(!r.ok) continue;
+      const total=Number(r.headers.get("Content-Length"))||0;
+      const startTime=performance.now();
+      let zipBuffer;
+
+      if(!r.body || !r.body.getReader){
+        zipBuffer=await r.arrayBuffer();
+      }else if(total>0){
+        const out=new Uint8Array(total);let offset=0,lastPaint=0;
+        const reader=r.body.getReader();
+        while(true){
+          const {done,value}=await reader.read();
+          if(done)break;
+          out.set(value,offset);offset+=value.length;
+          const now=performance.now();
+          if(now-lastPaint>120||offset===total){
+            lastPaint=now;updateProgressUI(offset,total,startTime,false);
+          }
+        }
+        zipBuffer=out.buffer;
+      }else{
+        const reader=r.body.getReader(),chunks=[];let received=0,lastPaint=0;
+        while(true){
+          const {done,value}=await reader.read();
+          if(done)break;
+          chunks.push(value);received+=value.length;
+          const now=performance.now();
+          if(now-lastPaint>120){lastPaint=now;updateProgressUI(received,0,startTime,false);}
+        }
+        const out=new Uint8Array(received);let off=0;
+        for(const c of chunks){out.set(c,off);off+=c.length;}
+        zipBuffer=out.buffer;
+      }
+
+      updateProgressUI(zipBuffer.byteLength,total||zipBuffer.byteLength,startTime,true);
+      status("Win95.zip 압축 해제 중…");
+      currentBuffer=await unzipSingleImg(zipBuffer);
+      currentName="Win95.zip";
+      showProgressUI(false);
+      makeEmulator(currentBuffer);
+      return;
+    }catch(e){
+      console.warn(path+" 로드 실패",e);
+    }
+  }
+  showProgressUI(false);
+  $("cardMsg").innerHTML="Win95.zip 자동 로드에 실패했습니다.";
+  status("Win95.zip 자동 로드 실패 — 서버 경로를 확인하세요.");
+}
+
+
+$("boot").onclick=()=> currentBuffer ? makeEmulator(currentBuffer) : loadBundled();
+$("startOverlay").onclick=()=> currentBuffer ? makeEmulator(currentBuffer) : loadBundled();
+$("imageFile").onchange=async e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+  if(!emulator){
+    status("먼저 '부팅'으로 Windows 95를 실행한 뒤 게임을 추가하세요.");
+    e.target.value="";
+    return;
+  }
+  status(f.name+" 불러오는 중…");
+  try{
+    const buf=await f.arrayBuffer();
+    await emulator.set_fda({buffer:buf});
+    status(f.name+" 추가됨 · '내 컴퓨터'의 플로피(A:) 드라이브에서 열 수 있습니다.");
+  }catch(err){
+    console.error(err);
+    status("게임 추가 실패: "+err.message);
+  }
+  e.target.value="";
+};
+
+$("folderDrive").onclick=async()=>{
+  if(!emulator){status("먼저 Windows 95를 부팅하세요.");return;}
+  // showDirectoryPicker는 Chromium 계열에서 가장 좋은 경로.
+  try{
+    if(window.showDirectoryPicker){
+      const handle=await window.showDirectoryPicker({mode:"read"});
+      const files=[];
+      async function walk(dir,prefix=""){
+        for await(const [name,entry] of dir.entries()){
+          if(entry.kind==="file"){
+            const f=await entry.getFile();
+            Object.defineProperty(f,"webkitRelativePath",{value:(prefix?prefix+"/":"")+name});
+            files.push(f);
+          }else if(entry.kind==="directory"){
+            await walk(entry,(prefix?prefix+"/":"")+name);
+          }
+        }
+      }
+      await walk(handle);
+      await mountFolderDrive(files);
+      return;
+    }
+  }catch(e){
+    if(e && e.name==="AbortError"){status("폴더 선택이 취소되었습니다.");return;}
+    console.warn("showDirectoryPicker 실패:",e);
+  }
+  $("folderInput").click();
+};
+$("folderInput").onchange=async e=>{
+  const files=e.target.files;
+  if(!files || !files.length){e.target.value="";return;}
+  try{
+    await mountFolderDrive(files);
+  }catch(err){
+    console.error(err);
+    status("폴더드라이브 실패: "+err.message);
+    alert("폴더드라이브를 만들 수 없습니다.\n"+err.message);
+  }
+  e.target.value="";
+};
+
+wireVirtualButtons($("vkbd"));
+wireVirtualButtons($("joypad"));
+$("toggleKbd").onclick=()=>{
+  $("vkbd").classList.toggle("hidden");
+  requestAnimationFrame(fitCanvas);
+};
+$("toggleJoy").onclick=()=>{
+  $("joypad").classList.toggle("hidden");
+  requestAnimationFrame(fitCanvas);
+};
+$("info").onclick=()=>$("infoOverlay").classList.remove("hidden");
+$("closeInfo").onclick=()=>$("infoOverlay").classList.add("hidden");
+$("reset").onclick=()=>{
+  if(!emulator)return;
+  try{emulator.restart();status("다시 시작 중…");}catch(e){console.error(e)}
+};
+$("screen").addEventListener("click", e=>{
+  if(e.target.closest("button, input, label")) return;
+  captureMouse();
+});
+$("screen").addEventListener("pointerdown", e=>{
+  if(e.target.closest("button, input, label")) return;
+  // 마우스/트랙패드/펜을 화면에서 누르는 순간 자동으로 잡습니다.
+  if(e.pointerType === "mouse" || e.pointerType === "pen") captureMouse();
+});
+
+
+async function enterWindows95Fullscreen(){
+  try{
+    if(document.fullscreenElement){
+      try{ screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); }catch(e){}
+      await document.exitFullscreen();
+      return;
+    }
+    const target=document.documentElement;
+    if(target.requestFullscreen) await target.requestFullscreen();
+    else if($("screen") && $("screen").requestFullscreen) await $("screen").requestFullscreen();
+
+    // Android/Chrome에서 허용되는 경우 유튜브와 비슷하게 가로 방향 고정
+    try{
+      if(screen.orientation && screen.orientation.lock){
+        await screen.orientation.lock("landscape");
+      }
+    }catch(e){
+      console.info("브라우저가 가로 방향 잠금을 허용하지 않습니다.", e);
+    }
+  }catch(e){
+    console.error(e);
+    if(typeof status==="function") status("전체화면을 사용할 수 없습니다.");
+  }
+}
+$("fullscreen").onclick=enterWindows95Fullscreen;
+window.addEventListener("load",()=>{
+  // 서버에서 images/Win95.zip을 자동으로 가져와 즉시 부팅
+  loadBundled();
+});
+
+window.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){ status("마우스 해제됨"); }
+  if(e.key==="F11"){e.preventDefault();$("fullscreen").click()}
+});
+
+// 화면 크기를 실제 에뮬레이터 해상도의 비율 그대로 최대 확대합니다.
+window.addEventListener("resize",fitCanvas);
+window.addEventListener("orientationchange",()=>setTimeout(fitCanvas,100));
+new ResizeObserver(fitCanvas).observe($("screen_container"));
+// "style"은 fitCanvas 자신이 바꾸는 값이므로 감시 대상에서 제외합니다(무한 루프 방지).
+// 실제 화면 해상도가 바뀔 때(width/height 속성)만 다시 맞춥니다.
+new MutationObserver(fitCanvas).observe($("screen_container"), {subtree:true, attributes:true, attributeFilter:["width","height"]});
+</script>
+
+</body>
+</html>
